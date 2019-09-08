@@ -34,5 +34,5 @@ class Raspberry():
 
 if __name__ == '__main__':
         pi = Raspberry()
-        pi.main()
+        # pi.main(), temp remove for testing
         pi.connectToServer()
