@@ -22,7 +22,7 @@ class Raspberry():
                 self.HOST = "192.168.1.175"
                 self.PORT = 8080
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.s.connect((self.HOST, self.port))
+                self.s.connect((self.HOST, self.PORT))
                 print("connected")
                 self.s.send("this is test, plz work")
 
