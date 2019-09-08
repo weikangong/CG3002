@@ -1,5 +1,6 @@
 import serial
 import time
+import socket
 
 class Raspberry():
         def main(self):
@@ -15,7 +16,23 @@ class Raspberry():
                     time.sleep(1)
                 self.port.write('A');
                 print ('Connected')
-        
+
+        def connectToServer(self):
+                print("attempting to connect to server")
+                self.HOST = "192.168.1.175"
+                self.PORT = 8080
+                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.s.connect((self.HOST, self.port))
+                print("connected")
+                self.s.send("this is test, plz work")
+
+#		self.voltage = 0 #list[len(list)-1][0]
+#		self.current = 0 #list[len(list)-1][1]
+#		self.power = 0  #self.voltage*self.current
+#		self.cumpower=0 #cumpower
+
+
 if __name__ == '__main__':
         pi = Raspberry()
         pi.main()
+        pi.connectToServer()
