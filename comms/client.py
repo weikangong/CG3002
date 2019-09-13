@@ -28,13 +28,12 @@ class clientComms():
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
+                        self.send("test message")       #change this to be input 
                 except KeyboardInterrupt:
                         sys.exit(1)
 
         def setUpComms(self):
-                print ("Enter ip address: ")
                 self.socket.append(sys.argv[1])
-                print ("Enter port number: ")
                 self.socket.append(sys.argv[2])
 
         def connectToServer(self, host, port):
@@ -43,9 +42,13 @@ class clientComms():
                 self.PORT = int(port) #8080
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.HOST, self.PORT))
-                print("connected")
-                self.s.send("this is test, plz work")
+                print("connected to server "+self.HOST", port: "+self.PORT)
 
+        def sendMessage(self, text):
+                try:
+                        self.s.send(text)
+                except any:
+                        print(any)
 
 if __name__ == '__main__':
         pi = Raspberry()
