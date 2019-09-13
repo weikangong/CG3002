@@ -19,7 +19,7 @@ class Raspberry():
 
         def connectToServer(self):
                 print("attempting to connect to server")
-                self.HOST = "192.168.1.175"
+                self.HOST = "192.168.43.203"
                 self.PORT = 8080
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.HOST, self.PORT))
