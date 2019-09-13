@@ -28,7 +28,7 @@ class clientComms():
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
-                        self.send("test message")       #change this to be input 
+                        self.sendMessage("test message")       #change this to be input 
                 except KeyboardInterrupt:
                         sys.exit(1)
 
