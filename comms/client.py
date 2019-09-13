@@ -42,7 +42,7 @@ class clientComms():
                 self.PORT = int(port) #8080
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.HOST, self.PORT))
-                print("connected to server "+self.HOST", port: "+self.PORT)
+                print("connected to server "+self.HOST+", port: "+self.PORT)
 
         def sendMessage(self, text):
                 try:
