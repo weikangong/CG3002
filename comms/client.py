@@ -1,6 +1,7 @@
 import serial
 import time
 import socket
+import sys
 
 class Raspberry():
         def __init__(self):
