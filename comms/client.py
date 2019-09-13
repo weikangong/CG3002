@@ -8,13 +8,13 @@ class Raspberry():
                 self.powerList = [0, 0, 0, 0]
 
         def main(self):
+                #wei kang, i commented this out for testing only
+                '''
+
                 #set up port connection
                 self.port=serial.Serial("/dev/serial0", baudrate=115200)
                 self.port.reset_input_buffer()
                 self.port.reset_output_buffer()
-
-                #wei kang, i commented this out for testing only
-                '''
 
                 #Handshaking, keep saying 'H' to Arduino unitl Arduion reply 'A'
                 while(self.port.in_waiting == 0 or self.port.read() != 'A'):
