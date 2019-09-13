@@ -51,5 +51,4 @@ if __name__ == '__main__':
         pi = Raspberry()
         #pi.main()
         client = clientComms()
-        client.setUpComms()
-        client.connectToServer()
+        client.main()
