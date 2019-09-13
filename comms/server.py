@@ -1,7 +1,7 @@
 import socket
 print("hi")
 
-ip_address = "192.168.137.9"    
+ip_address = "192.168.43.203"    
 port_number = 8080
     
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
