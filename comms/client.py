@@ -28,7 +28,7 @@ class clientComms():
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
-                        self.sendMessage("test message")       #change this to be input 
+                        self.sendMessage("test message")       #change this to be input
                 except KeyboardInterrupt:
                         sys.exit(1)
 
@@ -52,6 +52,6 @@ class clientComms():
 
 if __name__ == '__main__':
         pi = Raspberry()
-        #pi.main()
+        pi.main()
         client = clientComms()
         client.main()
