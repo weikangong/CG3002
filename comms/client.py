@@ -21,14 +21,17 @@ class Raspberry():
 
                         #Handshaking, keep saying 'H' to Arduino unitl Arduion reply 'A'
                         while(self.port.in_waiting == 0 or self.port.read() != 'A'):
-                        print ('Try to connect to Arduino')     
-                        self.port.write('S')
-                        time.sleep(1)
-                        self.port.write('A')
-                        print ('Connected')
+                                print ('Try to connect to Arduino')     
+                                self.port.write('S')
+                                time.sleep(1)
+                                self.port.write('A')
+                                print ('Connected')
 
                         #init threads
                         commThread = ReceiveData(self.buffer, self.port,  0.003)
+                
+                except KeyboardInterrupt:
+                        sys.exit(1)
         
 class clientComms():
         def __init__(self):
