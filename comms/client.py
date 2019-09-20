@@ -2,6 +2,11 @@ import serial
 import time
 import socket
 import sys
+import threading
+import time
+import RingBuffer as RB
+
+mutex = threading.Lock()
 
 class ReceiveData(threading.Thread):
     def __init__(self, buffer, port, period):
@@ -17,33 +22,33 @@ class ReceiveData(threading.Thread):
         #start to receive data from mega
         nextTime = time.time() + self.period
         if not self.buffer.isFull():
-            rcv = self.port.read(16)
+            rcv = self.port.read(120)
+            print (rcv)
             mutex.acquire()
             self.buffer.append(rcv)
             mutex.release()
         threading.Timer(nextTime - time.time(), self.readData).start()
 
 class Raspberry():
+        def __init__(self):
+                self.buffer = RB.RingBuffer(32)
 
         def main(self):
-                #set up port connection
+                # Set up port connection
                 self.port=serial.Serial("/dev/serial0", baudrate=115200)
                 self.port.reset_input_buffer()
                 self.port.reset_output_buffer()
 
-                #Handshaking, keep saying 'H' to Arduino unitl Arduion reply 'A'
+                # Handshaking
                 while(self.port.in_waiting == 0 or self.port.read() != 'A'):
                     print ('Try to connect to Arduino')
                     self.port.write('S')
                     time.sleep(1)
                 self.port.write('A');
                 print ('Connected')
-                
-                commThread = ReceiveData(self.buffer, self.port,  0.003)
-                while(1):
-                    if self.port.in_waiting >= 120:
-                        print (self.port.read(120).strip())
-                    
+
+                receiveDataThread = ReceiveData(self.buffer, self.port,  0.003)
+                self.threads.append(receiveDataThread)
 
 class clientComms():
         def __init__(self):
@@ -79,5 +84,5 @@ class clientComms():
 if __name__ == '__main__':
         pi = Raspberry()
         pi.main()
-        client = clientComms()
-        client.main()
+        # client = clientComms()
+        # client.main()
