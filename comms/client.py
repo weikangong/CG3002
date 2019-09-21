@@ -9,7 +9,7 @@ import CircularBuffer
 mutex = threading.Lock()
 
 class ReceiveData(threading.Thread):
-        def __init__(self, port, period, packetSize):
+        def __init__(self, buffer, port, period, packetSize):
                 threading.Thread.__init__(self)
                 self.buffer = buffer
                 self.port = port
@@ -26,7 +26,6 @@ class ReceiveData(threading.Thread):
                 nextTime = time.time() + self.period
                 if not self.buffer.isFull():
                         rcv = self.port.read(self.packetSize)
-                        print (rcv)
                         mutex.acquire()
                         self.buffer.put(rcv)
                         mutex.release()
@@ -65,6 +64,7 @@ class clientComms():
 
 class Raspberry():
         def __init__(self):
+                self.threads = []
                 self.buffer = CircularBuffer.CircularBuffer(30)
 
         def main(self):
@@ -83,6 +83,11 @@ class Raspberry():
 
                 receiveDataThread = ReceiveData(self.buffer, self.port, 0.003, 120)
                 self.threads.append(receiveDataThread)
+                
+                # Start threads
+                for thread in self.threads:
+                    # thread.daemon = True # Runs in background
+                    thread.start()
 
 if __name__ == '__main__':
         pi = Raspberry()
