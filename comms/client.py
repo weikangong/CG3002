@@ -4,51 +4,33 @@ import socket
 import sys
 import threading
 import time
-import RingBuffer as RB
+import CircularBuffer
 
 mutex = threading.Lock()
 
 class ReceiveData(threading.Thread):
-    def __init__(self, buffer, port, period):
-        threading.Thread.__init__(self)
-        self.buffer = buffer
-        self.port = port
-        self.period = period
+        def __init__(self, port, period, packetSize):
+                threading.Thread.__init__(self)
+                self.buffer = buffer
+                self.port = port
+                self.period = period
+                self.packetSize = packetSize
 
-    def run(self):
-        self.readData()
+        def run(self):
+                self.readData()
 
-    def readData(self):
-        #start to receive data from mega
-        nextTime = time.time() + self.period
-        if not self.buffer.isFull():
-            rcv = self.port.read(120)
-            print (rcv)
-            mutex.acquire()
-            self.buffer.append(rcv)
-            mutex.release()
-        threading.Timer(nextTime - time.time(), self.readData).start()
-
-class Raspberry():
-        def __init__(self):
-                self.buffer = RB.RingBuffer(32)
-
-        def main(self):
-                # Set up port connection
-                self.port=serial.Serial("/dev/serial0", baudrate=115200)
-                self.port.reset_input_buffer()
-                self.port.reset_output_buffer()
-
-                # Handshaking
-                while(self.port.in_waiting == 0 or self.port.read() != 'A'):
-                    print ('Try to connect to Arduino')
-                    self.port.write('S')
-                    time.sleep(1)
-                self.port.write('A');
-                print ('Connected')
-
-                receiveDataThread = ReceiveData(self.buffer, self.port,  0.003)
-                self.threads.append(receiveDataThread)
+         # Read data from arduino
+         # Packet format: Packet ID, x1, y1, z1, x2, y2, z2, x3, y3, z3,
+         # voltage, current, power, cumpower, checksum
+        def readData(self):
+                nextTime = time.time() + self.period
+                if not self.buffer.isFull():
+                        rcv = self.port.read(self.packetSize)
+                        print (rcv)
+                        mutex.acquire()
+                        self.buffer.put(rcv)
+                        mutex.release()
+                threading.Timer(nextTime - time.time(), self.readData).start()
 
 class clientComms():
         def __init__(self):
@@ -80,6 +62,27 @@ class clientComms():
                         self.s.send(text)
                 except any:
                         print(any)
+
+class Raspberry():
+        def __init__(self):
+                self.buffer = CircularBuffer.CircularBuffer(30)
+
+        def main(self):
+                # Set up port connection
+                self.port=serial.Serial("/dev/serial0", baudrate=115200)
+                self.port.reset_input_buffer()
+                self.port.reset_output_buffer()
+
+                # Handshaking
+                while(self.port.in_waiting == 0 or self.port.read() != 'A'):
+                    print ('Try to connect to Arduino')
+                    self.port.write('S')
+                    time.sleep(1)
+                self.port.write('A');
+                print ('Connected')
+
+                receiveDataThread = ReceiveData(self.buffer, self.port, 0.003, 120)
+                self.threads.append(receiveDataThread)
 
 if __name__ == '__main__':
         pi = Raspberry()
