@@ -18,10 +18,6 @@ import math
 
 #global variables
 mutex = threading.Lock()
-voltage = 0
-current = 0
-power = 0
-cum_power = 0
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -55,18 +51,53 @@ class ReceiveData(threading.Thread):
                         print ('Connected')
 
                         #init threads
-                commThread = ReceiveData(self.buffer, self.port,  0.003)
+                #commThread = ReceiveData(self.buffer, self.port,  0.003)
                 
 
+class storeData(threading.Thread):
+        def __init__(self, buffer):
+                threading.Thread.__init__(self)
+                self.buffer = buffer
+
+        def run(self):
+                self.storeData():
         
-class clientComms():
+        def storeData(self):
+                global voltage
+		global current
+		global power
+		global cum_power
+                mutex.acquire()
+                dataList = self.buffer.get()
+                mutex.release()
+
+                print("storing data: "+dataList)
+
+                if dataList: #list not empty
+                        ack = False
+                        if True:#add checksum check here, change voltage to parts of the dataList
+                                ack = True
+                                voltage = 0.0
+                                current = 0.0
+                                power = 0.0
+                                cum_power = 0.0
+                                #self.nextID = (data[0] + 1)%self.bufferSize
+                        else:
+				ack = False                                                  #some samples has problem
+				break 
+                        print("Data Received: "+voltage+"V, "+current_"A, "+power+"W, "+cum_power+"W ")
+                Timer(0.03, self.storeData).start()
+
+        
+class clientComms(threading.Thread):
         def __init__(self):
+                threading.Thread.__init__(self)
                 self.socket = []
                 self.SECRET_KEY = "panickerpanicker"
                 self.actions = ['handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
                 
 
-        def main(self):
+        def run(self):
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
@@ -144,8 +175,19 @@ class Raspberry():
                 self.port.write('A');
                 print ('Connected')
 
+                #receive data thread
                 receiveDataThread = ReceiveData(self.buffer, self.port, 0.003, 120)
                 self.threads.append(receiveDataThread)
+
+                #store data thread
+                storeDataThread = storeData(self.buffer)
+                self.threads.append(storeData)
+
+                #comms thread
+                client = clientComms()
+                self.threads.append(client)
+
+                
                 
                 # Start threads
                 for thread in self.threads:
@@ -153,7 +195,7 @@ class Raspberry():
                     thread.start()
 
 if __name__ == '__main__':
-        #pi = Raspberry()
-        #pi.main()
-        client = clientComms()
-        client.main()
+        pi = Raspberry()
+        pi.main()
+        # client = clientComms()
+        # client.main()
