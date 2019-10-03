@@ -3,21 +3,33 @@ import time
 import socket
 import sys
 import threading
-import RingBuffer as RB
+import time
+import CircularBuffer
 
 mutex = threading.Lock()
 
-class Raspberry():
-        def __init__(self):
-                self.buffer = RB.RingBuffer(32)
-                self.powerList = [0, 0, 0, 0]
+class ReceiveData(threading.Thread):
+        def __init__(self, buffer, port, period, packetSize):
+                threading.Thread.__init__(self)
+                self.buffer = buffer
+                self.port = port
+                self.period = period
+                self.packetSize = packetSize
 
-        def main(self):
-                try: 
-                        #set up port connection
-                        self.port=serial.Serial("/dev/serial0", baudrate=115200)
-                        self.port.reset_input_buffer()
-                        self.port.reset_output_buffer()
+        def run(self):
+                self.readData()
+
+         # Read data from arduino
+         # Packet format: Packet ID, x1, y1, z1, x2, y2, z2, x3, y3, z3,
+         # voltage, current, power, cumpower, checksum
+        def readData(self):
+                nextTime = time.time() + self.period
+                if not self.buffer.isFull():
+                        rcv = self.port.read(self.packetSize)
+                        mutex.acquire()
+                        self.buffer.put(rcv)
+                        mutex.release()
+                threading.Timer(nextTime - time.time(), self.readData).start()
 
                         #Handshaking, keep saying 'H' to Arduino unitl Arduion reply 'A'
                         while(self.port.in_waiting == 0 or self.port.read() != 'A'):
@@ -41,7 +53,7 @@ class clientComms():
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
-                        self.sendMessage("test message")       #change this to be input 
+                        self.sendMessage("test message")       #change this to be input
                 except KeyboardInterrupt:
                         sys.exit(1)
 
@@ -63,6 +75,7 @@ class clientComms():
                 except any:
                         print(any)
 
+<<<<<<< HEAD:comms/client.py
 class ReceiveData(threading.Thread):
 	def __init__(self, buffer, port, period):
 		threading.Thread.__init__(self)
@@ -83,9 +96,37 @@ class ReceiveData(threading.Thread):
 			self.buffer.append(rcv)
 			mutex.release()
 		threading.Timer(nextTime - time.time(), self.readData).start()
+=======
+class Raspberry():
+        def __init__(self):
+                self.threads = []
+                self.buffer = CircularBuffer.CircularBuffer(30)
+
+        def main(self):
+                # Set up port connection
+                self.port=serial.Serial("/dev/serial0", baudrate=115200)
+                self.port.reset_input_buffer()
+                self.port.reset_output_buffer()
+
+                # Handshaking
+                while(self.port.in_waiting == 0 or self.port.read() != 'A'):
+                    print ('Try to connect to Arduino')
+                    self.port.write('S')
+                    time.sleep(1)
+                self.port.write('A');
+                print ('Connected')
+
+                receiveDataThread = ReceiveData(self.buffer, self.port, 0.003, 120)
+                self.threads.append(receiveDataThread)
+                
+                # Start threads
+                for thread in self.threads:
+                    # thread.daemon = True # Runs in background
+                    thread.start()
+>>>>>>> 626c90e87bbd676ac8c8979a5a9b13ee9cb336e7:comms/RpiClient.py
 
 if __name__ == '__main__':
         pi = Raspberry()
-        #pi.main()
-        client = clientComms()
-        client.main()
+        pi.main()
+        # client = clientComms()
+        # client.main()
