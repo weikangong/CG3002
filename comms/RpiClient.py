@@ -32,18 +32,17 @@ class ReceiveData(threading.Thread):
                 threading.Timer(nextTime - time.time(), self.readData).start()
 
                         #Handshaking, keep saying 'H' to Arduino unitl Arduion reply 'A'
-                        while(self.port.in_waiting == 0 or self.port.read() != 'A'):
-                                print ('Try to connect to Arduino')     
-                                self.port.write('S')
-                                time.sleep(1)
-                                self.port.write('A')
-                                print ('Connected')
+                while(self.port.in_waiting == 0 or self.port.read() != 'A'):
+                        print ('Try to connect to Arduino')     
+                        self.port.write('S')
+                        time.sleep(1)
+                        self.port.write('A')
+                        print ('Connected')
 
                         #init threads
-                        commThread = ReceiveData(self.buffer, self.port,  0.003)
+                commThread = ReceiveData(self.buffer, self.port,  0.003)
                 
-                except KeyboardInterrupt:
-                        sys.exit(1)
+
         
 class clientComms():
         def __init__(self):
@@ -75,28 +74,6 @@ class clientComms():
                 except any:
                         print(any)
 
-<<<<<<< HEAD:comms/client.py
-class ReceiveData(threading.Thread):
-	def __init__(self, buffer, port, period):
-		threading.Thread.__init__(self)
-		self.buffer = buffer
-		self.port = port
-		self.period = period
-
-	def run(self):
-		self.readData()
-
-
-	def readData(self):
-		#start to receive data from mega
-		nextTime = time.time() + self.period
-		if not self.buffer.isFull():
-			rcv = self.port.read(16)
-			mutex.acquire()
-			self.buffer.append(rcv)
-			mutex.release()
-		threading.Timer(nextTime - time.time(), self.readData).start()
-=======
 class Raspberry():
         def __init__(self):
                 self.threads = []
@@ -123,7 +100,6 @@ class Raspberry():
                 for thread in self.threads:
                     # thread.daemon = True # Runs in background
                     thread.start()
->>>>>>> 626c90e87bbd676ac8c8979a5a9b13ee9cb336e7:comms/RpiClient.py
 
 if __name__ == '__main__':
         pi = Raspberry()
