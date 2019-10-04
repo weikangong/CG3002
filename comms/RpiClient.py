@@ -40,19 +40,7 @@ class ReceiveData(threading.Thread):
                         mutex.acquire()
                         self.buffer.put(rcv)
                         mutex.release()
-                threading.Timer(nextTime - time.time(), self.readData).start()
-
-                        #Handshaking, keep saying 'H' to Arduino unitl Arduion reply 'A'
-                while(self.port.in_waiting == 0 or self.port.read() != 'A'):
-                        print ('Try to connect to Arduino')     
-                        self.port.write('S')
-                        time.sleep(1)
-                        self.port.write('A')
-                        print ('Connected')
-
-                        #init threads
-                #commThread = ReceiveData(self.buffer, self.port,  0.003)
-                
+                threading.Timer(nextTime - time.time(), self.readData).start()               
 
 class storeData(threading.Thread):
         def __init__(self, buffer):
@@ -60,13 +48,13 @@ class storeData(threading.Thread):
                 self.buffer = buffer
 
         def run(self):
-                self.storeData():
+                self.storeData()
         
         def storeData(self):
                 global voltage
-		global current
-		global power
-		global cum_power
+                global current
+                global power
+                global cum_power
                 mutex.acquire()
                 dataList = self.buffer.get()
                 mutex.release()
@@ -83,10 +71,11 @@ class storeData(threading.Thread):
                                 cum_power = 0.0
                                 #self.nextID = (data[0] + 1)%self.bufferSize
                         else:
-				ack = False                                                  #some samples has problem
-				break 
-                        print("Data Received: "+voltage+"V, "+current_"A, "+power+"W, "+cum_power+"W ")
-                Timer(0.03, self.storeData).start()
+                                ack = False                        #some samples has problem
+                                break 
+                        
+                        print("Data Received: "+voltage+"V, "+current+"A, "+power+"W, "+cum_power+"W ")
+                threading.Timer(0.03, self.storeData).start()
 
         
 class clientComms(threading.Thread):
