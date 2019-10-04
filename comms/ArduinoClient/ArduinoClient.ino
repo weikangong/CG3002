@@ -1,8 +1,14 @@
+#include "MPU6050.h"
+#include <I2Cdev.h>
 #include <Wire.h>
 #include <Arduino_FreeRTOS.h>
 #include <semphr.h>
 #include <stdlib.h>
 #include <avr/power.h>
+
+// Sensor Function Headers //
+void setupSensors();
+void processData(int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t);
 
 // Packet definitons
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
@@ -32,8 +38,22 @@ float cumpower = 0.0;                   // Calculated energy (E = Pt)
 unsigned long timeLastTaken = 0;        // The last time readings were calculated (in number of ms elapsed since startup)
 unsigned long tempTime = 0;             // To use as "current time" in two lines
 
-const int MPU = 0x68;
-float AcX, AcY, AcZ, Temp, GyX, GyY, GyZ;
+//Initialize Sensor Variables
+//MPU6050 accelgyro; // class default I2C address is 0x68
+//MPU6050 accelgyro2(0x69);
+int16_t accX1, accY1, accZ1;
+int16_t gyX1, gyY1, gyZ1;
+int16_t accX2, accY2, accZ2;
+int16_t gyX2, gyY2, gyZ2;
+
+/* Variables for processed data */
+float gForceX1, gForceY1, gForceZ1; //Accelerometer processed variables
+float rotX1, rotY1, rotZ1;          //Gyroscope processed variables
+
+float gForceX2, gForceY2, gForceZ2; //Accelerometer processed variables
+float rotX2, rotY2, rotZ2;          //Gyroscope processed variables
+
+
 float sensorData[MAX_DATA_POINTS];      // Acc1, Acc2, Acc3, gyro1
 float powerData[MAX_POWER_POINTS];      // Voltage, current, power, cumpower
 
@@ -41,14 +61,11 @@ float powerData[MAX_POWER_POINTS];      // Voltage, current, power, cumpower
 /////      HARDWARE        //////
 /////////////////////////////////
 void setup() {
-  // Digital pins for sensors and power
-  pinMode(13, OUTPUT);
-  pinMode(12, OUTPUT);
-  pinMode(10, OUTPUT);
+  // Digital pins for power
   pinMode(CURR_PIN, INPUT);
   pinMode(VOLT_PIN, INPUT);
 
-  // Force unused digital pins to 0V to conserve power
+   //Force unused digital pins to 0V to conserve power
   for (int i = 0; i <= 53; i++) {
     if (i == 10 || i == 12 || i == 13 || i == 17 || i == 18 || i ==  19 || i == 20 || i == 21)
       continue;
@@ -97,61 +114,47 @@ void setup() {
   power_timer4_disable();
   power_timer5_disable();
 
-  Wire.begin();
-  Wire.beginTransmission(MPU);
-  Wire.write(0x6B);
-  Wire.write(0);
-  Wire.endTransmission(true);
 
   Serial.begin(115200);
   Serial1.begin(115200); //Serial1: P19 RX, P18 TX
   Serial.println("Arduino Online!");
-  
+  Wire.begin();
+//  setupSensors();
+
+  // Begin Handshake Protocol
   handshake();
+
+  // Create main task to be run
   xTaskCreate(startWork, "working", 200, NULL, 1, NULL);
+
+  // Start Scheduler
   vTaskStartScheduler();
 }
 
-void getSensorsValues() {
-  Serial.println("Reading Sensors");
-  for (int i = 0; i < 3; i++) {
-    if (i == 0) { // Acc1
-      digitalWrite(13, LOW);
-      digitalWrite(12, HIGH);
-      digitalWrite(10, HIGH);
-    } else if (i == 1) { // Acc2
-      digitalWrite(13, HIGH);
-      digitalWrite(12, LOW);
-      digitalWrite(10, HIGH);
-    } else { // Acc3
-      digitalWrite(13, HIGH);
-      digitalWrite(12, HIGH);
-      digitalWrite(10, LOW);
-    }
 
-    Wire.beginTransmission(MPU);
-    Wire.write(0x3B);
-    Wire.endTransmission(false);
-    Wire.requestFrom(MPU, 14, true);
-    AcX = Wire.read() << 8 | Wire.read();
-    AcY = Wire.read() << 8 | Wire.read();
-    AcZ = Wire.read() << 8 | Wire.read();
-    Temp = Wire.read() << 8 | Wire.read();
-    GyX = Wire.read() << 8 | Wire.read();
-    GyY = Wire.read() << 8 | Wire.read();
-    GyZ = Wire.read() << 8 | Wire.read();
+//Initialize sensors
+//void setupSensors() {
+//    accelgyro.initialize();
+//    accelgyro2.initialize();
+//}
 
-    sensorData[i * 3] = AcX / 16384;
-    sensorData[i * 3 + 1] = AcY / 16384;
-    sensorData[i * 3 + 2] = AcZ / 16384;
+void processData(int16_t ax,int16_t ay,int16_t az,int16_t gx,int16_t gy,int16_t gz,int16_t a1x,int16_t a1y,int16_t a1z,int16_t g1x,int16_t g1y,int16_t g1z) {
+    
+    gForceX1 = accX1 / 16384.0 * 9.81;
+    gForceY1 = accY1 / 16384.0 * 9.81; 
+    gForceZ1 = accZ1 / 16384.0 * 9.81;
+    rotX1 = gyX1 / 131.0;
+    rotY1 = gyY1 / 131.0; 
+    rotZ1 = gyZ1 / 131.0;
 
-    if (i == 1) {
-      sensorData[9] = GyX / 131;
-      sensorData[10] = GyY / 131;
-      sensorData[11] = GyZ / 131;
-    }
-  }
+    gForceX2 = accX2 / 16384.0 * 9.81;
+    gForceY2 = accY2 / 16384.0 * 9.81; 
+    gForceZ2 = accZ2 / 16384.0 * 9.81;
+    rotX2 = gyX2 / 131.0;
+    rotY2 = gyY2 / 131.0; 
+    rotZ2 = gyZ2 / 131.0;
 }
+
 
 void getPowerValues() {
   Serial.println("Reading Power");
@@ -206,7 +209,40 @@ static void startWork(void * pvParameters) {
   while (1) {
     TickType_t xCurrWakeTime = xTaskGetTickCount();
 
-    getSensorsValues();
+    //read sensors, integration with hardware
+//    accelgyro.getMotion6(&accX1, &accY1, &accZ1, &gyX1, &gyY1, &gyZ1);
+//    accelgyro2.getMotion6(&accX2, &accY2, &accZ2, &gyX2, &gyY2, &gyZ2);
+    accX1 = 1;
+    accY1 = 2;
+    accZ1 = 3;
+    gyX1 = 1;
+    gyY1 = 2;
+    gyZ1 = 3;
+
+    accX2 = 1;
+    accY2 = 2;
+    accZ2 = 3;
+    gyX2 = 1;
+    gyY2 = 2;
+    gyZ2 = 3;
+
+    //process data, give accelerometer readings in g, gyrometer readings in deg
+    processData(accX1, accY1, accZ1, gyX1, gyY1, gyZ1, accX2, accY2, accZ2, gyX2, gyY2, gyZ2);
+
+    //store processed data in sensorData[0:11]
+    sensorData[0] = gForceX1;
+    sensorData[1] = gForceY1;
+    sensorData[2] = gForceZ1;
+    sensorData[3] = rotX1;
+    sensorData[4] = rotY1;
+    sensorData[5] = rotZ1;
+    sensorData[6] = gForceX2;
+    sensorData[7] = gForceY2;
+    sensorData[8] = gForceZ2;
+    sensorData[9] = rotX2;
+    sensorData[10] = rotY2;
+    sensorData[11] = rotZ2;
+    
     getPowerValues();
     formatMessage();
     pushMessage();
@@ -254,7 +290,9 @@ void formatMessage() {
   slotID = (slotID + 1) % MAX_PACKET;
   Serial.print("Message formatted, len: ");
   Serial.println(strlen(tempStr));
+  Serial.println(tempStr);
   strcpy(tempStr, "");
+  
 }
 
 void pushMessage() {
@@ -277,5 +315,7 @@ void getResponse() {
     sendID = packetID; // Resend previous frame 
   }
 }
+
+
 
 void loop() { }
