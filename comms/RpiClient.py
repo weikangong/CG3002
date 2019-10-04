@@ -50,11 +50,12 @@ class storeData(threading.Thread):
         def run(self):
                 self.storeData()
         
-        def storeData(self):
+        def storeData(self, port):
                 global voltage
                 global current
                 global power
                 global cum_power
+                self.port = port
                 mutex.acquire()
                 dataList = self.buffer.get()
                 mutex.release()
@@ -169,7 +170,7 @@ class Raspberry():
                 self.threads.append(receiveDataThread)
 
                 #store data thread
-                storeDataThread = storeData(self.buffer)
+                storeDataThread = storeData(self.buffer, self.port)
                 self.threads.append(storeData)
 
                 #comms thread
