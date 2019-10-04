@@ -6,6 +6,7 @@ import threading
 import time
 import CircularBuffer
 import random
+import operator
 
 from Crypto.Cipher import AES
 from Crypto import Random
@@ -18,6 +19,11 @@ import math
 
 #global variables
 mutex = threading.Lock()
+
+voltage = 0
+current = 0
+power = 0
+cum_power = 0
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -43,77 +49,97 @@ class ReceiveData(threading.Thread):
                 threading.Timer(nextTime - time.time(), self.readData).start()               
 
 class storeData(threading.Thread):
-        def __init__(self, buffer):
+        def __init__(self, buffer, port, powerList):
                 threading.Thread.__init__(self)
                 self.buffer = buffer
+                self.port = port
+                self.powerList = powerList
 
         def run(self):
                 self.storeData()
         
-        def storeData(self, port):
-                global voltage
-                global current
-                global power
-                global cum_power
-                self.port = port
+        def storeData(self):
+            
+                #port = self.port
+                #self.buffer = buffer
                 mutex.acquire()
                 dataList = self.buffer.get()
                 mutex.release()
-
-                print("storing data: "+dataList)
+            
+                print("storing data: "+str(dataList))
 
                 if dataList: #list not empty
-                        ack = False
-                        if True:#add checksum check here, change voltage to parts of the dataList
-                                ack = True
-                                voltage = 0.0
-                                current = 0.0
-                                power = 0.0
-                                cum_power = 0.0
-                                #self.nextID = (data[0] + 1)%self.bufferSize
-                        else:
-                                ack = False                        #some samples has problem
-                                break 
+                        for data in dataList:
+                            ack = False
+                            if reduce(operator.xor, float(data)): #add checksum check here, change voltage to parts of the dataList
+                                    ack = True
+                                    mutex.acquire()
+                                    self.powerList[0] = data[13]
+                                    self.powerList[1] = data[14]
+                                    self.powerList[2] = data[15]
+                                    self.powerList[3] = data[16]
+                                    
+                                    self.nextID = (int(data[0]) + 1)%self.buffer.getSize()
+                                    mutex.release()
+                            else:
+                                    ack = False                        #some samples has problem
+                                    break
                         
-                        print("Data Received: "+voltage+"V, "+current+"A, "+power+"W, "+cum_power+"W ")
+                    
+                
+                        if ack:
+                                print("sending ack")
+                                self.port.write('A')
+                                self.port.write(chr(self.nextID))
+                                mutex.acquire()
+                                self.buffer.ack(self.nextID)
+                                mutex.release()
+                        else:
+                            print("no ack")
+                            self.port.write('N')
+                            self.port.write(chr(self.nextID))
+                            mutex.acquire()
+                            self.buffer.nack(self.nextID)
+                            mutex.release()
+ 
                 threading.Timer(0.03, self.storeData).start()
 
         
 class clientComms(threading.Thread):
-        def __init__(self):
+        def __init__(self, powerList):
                 threading.Thread.__init__(self)
                 self.socket = []
                 self.SECRET_KEY = "panickerpanicker"
                 self.actions = ['handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
+                self.powerList = powerList
                 
-
-        def run(self):
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
                         
                         time.sleep(3)
                         self.connectToServer(self.socket[0], self.socket[1])
-                        
-                        print("all good so far")
-                        
-                        while True:
-                            
-                            iv = Random.new().read(AES.block_size)
-                            cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
-                            randomMove = random.randint(0,9)
-                            message = ("#" + self.actions[randomMove]+ "|"+str(format(voltage, '.2f')) + "|" + str(format(current, '.2f')) + "|" + str(format(power, '.2f')) + "|" + str(format(cum_power, '.2f')) + "|").encode('utf8').strip()                             
-                            paddedMessage = self.padMessage(message, AES.block_size)
-                            encryptedMessage = cipher.encrypt(paddedMessage)
-                            encodedMessage = base64.b64encode(iv + encryptedMessage)
-                            time.sleep(3)
-                            print(self.actions[randomMove])
-                            self.sendMessage(encodedMessage)       #change this to be input
-                        
-                       
-                        
+                
                 except KeyboardInterrupt:
                         sys.exit(1)
+
+        def run(self):
+            
+                        
+            iv = Random.new().read(AES.block_size)
+            cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
+            randomMove = random.randint(0,9)
+            mutex.acquire()
+            message = ("#" + self.actions[randomMove]+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()                             
+            paddedMessage = self.padMessage(message, AES.block_size)
+            encryptedMessage = cipher.encrypt(paddedMessage)
+            encodedMessage = base64.b64encode(iv + encryptedMessage)
+            time.sleep(3)
+            print(self.actions[randomMove])
+            self.sendMessage(encodedMessage)
+            mutex.release() #change this to be input
+           
+            threading.Timer(5, self.run).start()
 
         def setUpComms(self):
                 self.socket.append(sys.argv[1])
@@ -164,17 +190,19 @@ class Raspberry():
                     time.sleep(1)
                 self.port.write('A');
                 print ('Connected')
+                
+                powerList = [0,0,0,0]
 
                 #receive data thread
                 receiveDataThread = ReceiveData(self.buffer, self.port, 0.003, 120)
                 self.threads.append(receiveDataThread)
 
                 #store data thread
-                storeDataThread = storeData(self.buffer, self.port)
-                self.threads.append(storeData)
+                storeDataThread = storeData(self.buffer, self.port, powerList)
+                self.threads.append(storeDataThread)
 
                 #comms thread
-                client = clientComms()
+                client = clientComms(powerList)
                 self.threads.append(client)
 
                 
