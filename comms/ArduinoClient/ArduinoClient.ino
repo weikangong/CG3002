@@ -23,7 +23,7 @@ char packetBuffer[MAX_PACKET_SIZE * MAX_PACKET];
 char tempStr[MAX_PACKET_SIZE];
 
 // Sensors and Power definitions
-const int CURR_PIN = A0;
+const int CURR_PIN = A15;
 const int VOLT_PIN = A1;
 const float RS = 0.1;                   // Shunt resistor value (in ohms)
 const int RL = 10000;                   // RL of the INA169 (in ohms)
@@ -39,8 +39,8 @@ unsigned long timeLastTaken = 0;        // The last time readings were calculate
 unsigned long tempTime = 0;             // To use as "current time" in two lines
 
 //Initialize Sensor Variables
-//MPU6050 accelgyro; // class default I2C address is 0x68
-//MPU6050 accelgyro2(0x69);
+MPU6050 accelgyro; // class default I2C address is 0x68
+MPU6050 accelgyro2(0x69);
 int16_t accX1, accY1, accZ1;
 int16_t gyX1, gyY1, gyZ1;
 int16_t accX2, accY2, accZ2;
@@ -119,7 +119,7 @@ void setup() {
   Serial1.begin(115200); //Serial1: P19 RX, P18 TX
   Serial.println("Arduino Online!");
   Wire.begin();
-//  setupSensors();
+  setupSensors();
 
   // Begin Handshake Protocol
   handshake();
@@ -133,10 +133,10 @@ void setup() {
 
 
 //Initialize sensors
-//void setupSensors() {
-//    accelgyro.initialize();
-//    accelgyro2.initialize();
-//}
+void setupSensors() {
+    accelgyro.initialize();
+    accelgyro2.initialize();
+}
 
 void processData(int16_t ax,int16_t ay,int16_t az,int16_t gx,int16_t gy,int16_t gz,int16_t a1x,int16_t a1y,int16_t a1z,int16_t g1x,int16_t g1y,int16_t g1z) {
     
@@ -210,21 +210,21 @@ static void startWork(void * pvParameters) {
     TickType_t xCurrWakeTime = xTaskGetTickCount();
 
     //read sensors, integration with hardware
-//    accelgyro.getMotion6(&accX1, &accY1, &accZ1, &gyX1, &gyY1, &gyZ1);
-//    accelgyro2.getMotion6(&accX2, &accY2, &accZ2, &gyX2, &gyY2, &gyZ2);
-    accX1 = 1;
-    accY1 = 2;
-    accZ1 = 3;
-    gyX1 = 1;
-    gyY1 = 2;
-    gyZ1 = 3;
-
-    accX2 = 1;
-    accY2 = 2;
-    accZ2 = 3;
-    gyX2 = 1;
-    gyY2 = 2;
-    gyZ2 = 3;
+    accelgyro.getMotion6(&accX1, &accY1, &accZ1, &gyX1, &gyY1, &gyZ1);
+    accelgyro2.getMotion6(&accX2, &accY2, &accZ2, &gyX2, &gyY2, &gyZ2);
+//    accX1 = 1;
+//    accY1 = 2;
+//    accZ1 = 3;
+//    gyX1 = 1;
+//    gyY1 = 2;
+//    gyZ1 = 3;
+//
+//    accX2 = 1;
+//    accY2 = 2;
+//    accZ2 = 3;
+//    gyX2 = 1;
+//    gyY2 = 2;
+//    gyZ2 = 3;
 
     //process data, give accelerometer readings in g, gyrometer readings in deg
     processData(accX1, accY1, accZ1, gyX1, gyY1, gyZ1, accX2, accY2, accZ2, gyX2, gyY2, gyZ2);
