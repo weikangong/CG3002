@@ -70,10 +70,33 @@ class storeData(threading.Thread):
 
                 if dataList: #list not empty
                         for data in dataList:
+                            
+                            print(data) #string
+                            
+                            
+                            byte_array = bytearray(data)
+                            print("byte array")
+                            print(byte_array)
+                            
+                            byte_array_encoded = bytearray(data.encode())
+                            print("byte array encoded")
+                            print(byte_array_encoded)
+                            
+                            check_sum = data.rsplit(",",1)[1].rstrip('\x00')
+                            data = data.rsplit(",",1)[0]
+                            
+                            test_sum = reduce(operator.xor, [ord(c) for c in data])
+                            print("check_sum: "+check_sum)
+                            print("test_sum: "+str(test_sum)) #str(1)
+                            
                             ack = False
-                            if reduce(operator.xor, float(data)): #add checksum check here, change voltage to parts of the dataList
+                            if test_sum == int(check_sum): #add checksum check here, change voltage to parts of the dataList
                                     ack = True
+                                    print("checksum success")
                                     mutex.acquire()
+                                    
+                                    data = [x.rstrip('\x00') for x in data.split(',')]
+                                    
                                     self.powerList[0] = data[13]
                                     self.powerList[1] = data[14]
                                     self.powerList[2] = data[15]
@@ -83,10 +106,9 @@ class storeData(threading.Thread):
                                     mutex.release()
                             else:
                                     ack = False                        #some samples has problem
+                                    print('checksum failed')
                                     break
-                        
-                    
-                
+
                         if ack:
                                 print("sending ack")
                                 self.port.write('A')

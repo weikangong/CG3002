@@ -16,7 +16,7 @@ class CircularBuffer():
                                 self.full = True
                                 print("buffer full")
                         else:
-                                self.buffer[self.nextID] = result
+                                self.buffer[self.nextID] = packet
                                 print ("buffer saving: "+str(self.buffer[self.nextID]))
                                 self.nextID = (self.nextID + 1) % self.size
 
