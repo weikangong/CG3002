@@ -12,7 +12,7 @@ const int MAX_POWER_POINTS = 4;         // 4 different power parameters
 const int MAX_PACKET_SIZE = 120;
 const int MAX_PACKET = 30;
 
-int ackID = 0;
+int ackID = 0; 
 int sendID = 0;
 int slotID = 0;
 char packetBuffer[MAX_PACKET_SIZE * MAX_PACKET];
@@ -145,30 +145,30 @@ void getSensorValues() {
     rotY2 = gyY2 / 131.0; 
     rotZ2 = gyZ2 / 131.0;
 
-//    sensorData[0] = gForceX1;
-//    sensorData[1] = gForceY1;
-//    sensorData[2] = gForceZ1;
-//    sensorData[3] = rotX1;
-//    sensorData[4] = rotY1;
-//    sensorData[5] = rotZ1;
-//    sensorData[6] = gForceX2;
-//    sensorData[7] = gForceY2;
-//    sensorData[8] = gForceZ2;
-//    sensorData[9] = rotX2;
-//    sensorData[10] = rotY2;
+    sensorData[0] = gForceX1;
+    sensorData[1] = gForceY1;
+    sensorData[2] = gForceZ1;
+    sensorData[3] = rotX1;
+    sensorData[4] = rotY1;
+    sensorData[5] = rotZ1;
+    sensorData[6] = gForceX2;
+    sensorData[7] = gForceY2;
+    sensorData[8] = gForceZ2;
+    sensorData[9] = rotX2;
+    sensorData[10] = rotY2;
 //    sensorData[11] = rotZ2;
-    sensorData[0] = 11.12;
-    sensorData[1] = 10.09;
-    sensorData[2] = -1.21;
-    sensorData[3] = 4.78;
-    sensorData[4] = 2.09;
-    sensorData[5] = 0.91;
-    sensorData[6] = 5.42;
-    sensorData[7] = 31.11;
-    sensorData[8] = 33.22;
-    sensorData[9] = 67.11;
-    sensorData[10] = -1.23;
-    sensorData[11] = -0.35;
+//    sensorData[0] = 11.12;
+//    sensorData[1] = 10.09;
+//    sensorData[2] = -1.21;
+//    sensorData[3] = 4.78;
+//    sensorData[4] = 2.09;
+//    sensorData[5] = 0.91;
+//    sensorData[6] = 5.42;
+//    sensorData[7] = 31.11;
+//    sensorData[8] = 33.22;
+//    sensorData[9] = 67.11;
+//    sensorData[10] = -1.23;
+//    sensorData[11] = -0.35;
 }
 
 void getPowerValues() {
@@ -181,14 +181,14 @@ void getPowerValues() {
   cumpower += (tempTime - timeLastTaken) * power / 1000.0;
   timeLastTaken = tempTime;
 
-//  powerData[0] = voltage;
-//  powerData[1] = current;
-//  powerData[2] = power;
-//  powerData[3] = cumpower;
-  powerData[0] = 5.01;
-  powerData[1] = 1.11;
-  powerData[2] = 33.12;
-  powerData[3] = 12.01;
+  powerData[0] = voltage;
+  powerData[1] = current;
+  powerData[2] = power;
+  powerData[3] = cumpower;
+//  powerData[0] = 5.01;
+//  powerData[1] = 1.11;
+//  powerData[2] = 33.12;
+//  powerData[3] = 12.01;
 }
 
 /////////////////////////////////
@@ -288,11 +288,15 @@ void pushMessage() {
 }
 
 void getResponse() {
-  if (Serial1.available() && Serial1.read() == 'A') {
+  char val = Serial1.read();
+  Serial.print("Response: ");
+  Serial.println(val);
+
+  if (Serial1.available() && val == 'A') {
     Serial.println("Packet Ack");
     int packetID = Serial1.read();
     ackID = packetID;
-  } else if (Serial1.available() && Serial1.read() == 'N') {
+  } else if (Serial1.available() && val == 'N') {
     Serial.println("Packet Nack");
     int packetID = Serial1.read();
     ackID = packetID;
