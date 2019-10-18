@@ -7,6 +7,7 @@ import time
 import CircularBuffer
 import random
 import operator
+import csv
 
 from Crypto.Cipher import AES
 from Crypto import Random
@@ -24,6 +25,8 @@ voltage = 0
 current = 0
 power = 0
 cum_power = 0
+current_move = "nothing"
+
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -49,11 +52,12 @@ class ReceiveData(threading.Thread):
                 threading.Timer(nextTime - time.time(), self.readData).start()               
 
 class storeData(threading.Thread):
-        def __init__(self, buffer, port, powerList):
+        def __init__(self, buffer, port, powerList, current_move):
                 threading.Thread.__init__(self)
                 self.buffer = buffer
                 self.port = port
                 self.powerList = powerList
+                self.current_move = current_move
 
         def run(self):
                 self.storeData()
@@ -66,33 +70,27 @@ class storeData(threading.Thread):
                 dataList = self.buffer.get()
                 mutex.release()
             
-                print("storing data: "+str(dataList))
+                #print("storing data: "+str(dataList))
 
                 if dataList: #list not empty
                         for data in dataList:
-                            
-                            print(data) #string
-                            
-                            
-                            byte_array = bytearray(data)
-                            print("byte array")
-                            print(byte_array)
-                            
-                            byte_array_encoded = bytearray(data.encode())
-                            print("byte array encoded")
-                            print(byte_array_encoded)
-                            
+                            #print data
+                            #print(data) #string             
                             check_sum = data.rsplit(",",1)[1].rstrip('\x00')
+                            #print("check sum: "+check_sum)
+                            
+                            
                             data = data.rsplit(",",1)[0]
                             
                             test_sum = reduce(operator.xor, [ord(c) for c in data])
-                            print("check_sum: "+check_sum)
-                            print("test_sum: "+str(test_sum)) #str(1)
+                            #print("check_sum: "+check_sum)
+                            #print("test_sum: "+str(test_sum)) #str(1)
                             
                             ack = False
-                            if test_sum == int(check_sum): #add checksum check here, change voltage to parts of the dataList
+                            if True:
+                            #if test_sum == int(check_sum.rstrip('\0')): #add checksum check here, change voltage to parts of the dataList
                                     ack = True
-                                    print("checksum success")
+                                    #print("checksum success")
                                     mutex.acquire()
                                     
                                     data = [x.rstrip('\x00') for x in data.split(',')]
@@ -104,36 +102,44 @@ class storeData(threading.Thread):
                                     
                                     self.nextID = (int(data[0]) + 1)%self.buffer.getSize()
                                     mutex.release()
+                                    
+                                    #storing into csv
+                                    with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
+                                        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
+                                        filewriter.writerow(data)
+                                    
                             else:
                                     ack = False                        #some samples has problem
                                     print('checksum failed')
                                     break
 
                         if ack:
-                                print("sending ack")
+                                #print("sending ack")
                                 self.port.write('A')
                                 self.port.write(chr(self.nextID))
                                 mutex.acquire()
                                 self.buffer.ack(self.nextID)
                                 mutex.release()
                         else:
-                            print("no ack")
+                            #print("no ack")
                             self.port.write('N')
                             self.port.write(chr(self.nextID))
                             mutex.acquire()
                             self.buffer.nack(self.nextID)
                             mutex.release()
  
-                threading.Timer(0.03, self.storeData).start()
+                threading.Timer(0.06, self.storeData).start()
 
         
 class clientComms(threading.Thread):
-        def __init__(self, powerList):
+        def __init__(self, powerList, current_move):
                 threading.Thread.__init__(self)
                 self.socket = []
                 self.SECRET_KEY = "panickerpanicker"
-                self.actions = ['handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
+                self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
                 self.powerList = powerList
+                self.moveIndex = 0
+                self.current_move = current_move
                 
                 try:
                         self.setUpComms()
@@ -150,17 +156,25 @@ class clientComms(threading.Thread):
                         
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
-            randomMove = random.randint(0,9)
             mutex.acquire()
-            message = ("#" + self.actions[randomMove]+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()                             
+            message = ("#" + self.actions[self.moveIndex]+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()                             
             paddedMessage = self.padMessage(message, AES.block_size)
             encryptedMessage = cipher.encrypt(paddedMessage)
             encodedMessage = base64.b64encode(iv + encryptedMessage)
             time.sleep(3)
-            print(self.actions[randomMove])
+            self.current_move = self.actions[self.moveIndex]
+            print(self.current_move)
+            
+            with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
+                                        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
+                                        filewriter.writerow(self.current_move)
+          
+            self.moveIndex += 1
+            
             self.sendMessage(encodedMessage)
             mutex.release() #change this to be input
            
+               
             threading.Timer(5, self.run).start()
 
         def setUpComms(self):
@@ -192,12 +206,13 @@ class clientComms(threading.Thread):
                 try:
                         self.s.send(text)
                 except any:
-                        print(any)
+                        print()
 
 class Raspberry():
         def __init__(self):
                 self.threads = []
                 self.buffer = CircularBuffer.CircularBuffer(30)
+                self.curr_move = "nothing"
 
         def main(self):
                 # Set up port connection
@@ -213,18 +228,20 @@ class Raspberry():
                 self.port.write('A');
                 print ('Connected')
                 
+                
                 powerList = [0,0,0,0]
+                current_move = "nothing"
 
                 #receive data thread
-                receiveDataThread = ReceiveData(self.buffer, self.port, 0.003, 120)
+                receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 120)
                 self.threads.append(receiveDataThread)
 
                 #store data thread
-                storeDataThread = storeData(self.buffer, self.port, powerList)
+                storeDataThread = storeData(self.buffer, self.port, powerList, current_move)
                 self.threads.append(storeDataThread)
 
                 #comms thread
-                client = clientComms(powerList)
+                client = clientComms(powerList, current_move)
                 self.threads.append(client)
 
                 
