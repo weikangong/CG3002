@@ -15,7 +15,6 @@ from Crypto.Util.py3compat import *
 
 import base64
 import numpy as np
-#import pandas as pd
 import math
 
 #global variables
@@ -25,7 +24,6 @@ voltage = 0
 current = 0
 power = 0
 cum_power = 0
-current_move = "nothing"
 
 
 class ReceiveData(threading.Thread):
@@ -52,43 +50,43 @@ class ReceiveData(threading.Thread):
                 threading.Timer(nextTime - time.time(), self.readData).start()               
 
 class storeData(threading.Thread):
-        def __init__(self, buffer, port, powerList, current_move):
+        def __init__(self, buffer, port, powerList, current_move, client):
                 threading.Thread.__init__(self)
                 self.buffer = buffer
                 self.port = port
                 self.powerList = powerList
                 self.current_move = current_move
+                self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
+                self.machine_learning_data_set = []
+                self.client = client
 
         def run(self):
                 self.storeData()
+                
+        def run_machine_learning(self):
+                #dalson, leonard, can use this function. data (2d array) is in self.machine_learning_data_set
+                predicted_action = self.actions[0] #use idle for testing
+            
+                #once machine learning code is done, this function will send data
+                self.client.run(predicted_action)
         
         def storeData(self):
-            
-                #port = self.port
-                #self.buffer = buffer
                 mutex.acquire()
                 dataList = self.buffer.get()
                 mutex.release()
-            
-                #print("storing data: "+str(dataList))
 
                 if dataList: #list not empty
                         for data in dataList:
-                            #print data
-                            #print(data) #string             
+       
                             check_sum = data.rsplit(",",1)[1].rstrip('\x00')
-                            #print("check sum: "+check_sum)
-                            
                             
                             data = data.rsplit(",",1)[0]
                             
                             test_sum = reduce(operator.xor, [ord(c) for c in data])
-                            #print("check_sum: "+check_sum)
-                            #print("test_sum: "+str(test_sum)) #str(1)
                             
                             ack = False
                             if True:
-                            #if test_sum == int(check_sum.rstrip('\0')): #add checksum check here, change voltage to parts of the dataList
+                            #if test_sum == int(check_sum.rstrip('\0')):
                                     ack = True
                                     #print("checksum success")
                                     mutex.acquire()
@@ -107,6 +105,10 @@ class storeData(threading.Thread):
                                     with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
                                         filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
                                         filewriter.writerow(data)
+                                    
+                                    #storing into array
+                                    self.machine_learning_data_set.append(data)
+                                        
                                     
                             else:
                                     ack = False                        #some samples has problem
@@ -127,6 +129,10 @@ class storeData(threading.Thread):
                             mutex.acquire()
                             self.buffer.nack(self.nextID)
                             mutex.release()
+                            
+                        if len(self.machine_learning_data_set) > 150:
+                            self.run_machine_learning()
+                            self.machine_learning_data_set = []
  
                 threading.Timer(0.06, self.storeData).start()
 
@@ -151,31 +157,26 @@ class clientComms(threading.Thread):
                 except KeyboardInterrupt:
                         sys.exit(1)
 
-        def run(self):
-            
+        def run(self, action):
                         
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
             mutex.acquire()
-            message = ("#" + self.actions[self.moveIndex]+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()                             
+            message = ("#" + action+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()                             
+            print("sent message: "+message)
             paddedMessage = self.padMessage(message, AES.block_size)
             encryptedMessage = cipher.encrypt(paddedMessage)
             encodedMessage = base64.b64encode(iv + encryptedMessage)
             time.sleep(3)
-            self.current_move = self.actions[self.moveIndex]
-            print(self.current_move)
             
+            #writing csv file, can delete
             with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
                                         filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-                                        filewriter.writerow(self.current_move)
+                                        filewriter.writerow(action)
           
-            self.moveIndex += 1
-            
+
             self.sendMessage(encodedMessage)
             mutex.release() #change this to be input
-           
-               
-            threading.Timer(5, self.run).start()
 
         def setUpComms(self):
                 self.socket.append(sys.argv[1])
@@ -228,23 +229,19 @@ class Raspberry():
                 self.port.write('A');
                 print ('Connected')
                 
-                
                 powerList = [0,0,0,0]
-                current_move = "nothing"
 
                 #receive data thread
                 receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 120)
                 self.threads.append(receiveDataThread)
 
-                #store data thread
-                storeDataThread = storeData(self.buffer, self.port, powerList, current_move)
-                self.threads.append(storeDataThread)
-
                 #comms thread
                 client = clientComms(powerList, current_move)
                 self.threads.append(client)
 
-                
+                #store data thread
+                storeDataThread = storeData(self.buffer, self.port, powerList, current_move, client)
+                self.threads.append(storeDataThread)
                 
                 # Start threads
                 for thread in self.threads:
