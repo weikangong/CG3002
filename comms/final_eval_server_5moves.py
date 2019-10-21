@@ -58,7 +58,8 @@ class Server(threading.Thread):
 
         # Listen for incoming connections
         self.sock.listen(1)
-        connection, address = s.accept() #we define the connection and address as what the socket accepts
+        # connection, address = s.accept() #we define the connection and address as what the socket accepts
+        connection, address =self.sock.accept()
         print("Connected to " + address[0] + ":" +str(address[1]))
 
         self.actions = ['handmotor', 'handmotor', 'handmotor', 'handmotor',
