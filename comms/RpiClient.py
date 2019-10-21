@@ -64,6 +64,8 @@ class storeData(threading.Thread):
                 self.storeData()
                 
         def run_machine_learning(self):
+                test = pd.read_csv("./test.csv")
+                print(test.head())
                 #dalson, leonard, can use this function. data (2d array) is in self.machine_learning_data_set
                 predicted_action = self.actions[0] #use idle for testing
             
