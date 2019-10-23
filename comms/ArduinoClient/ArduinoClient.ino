@@ -25,8 +25,8 @@ const int CURR_PIN = A15;
 const int VOLT_PIN = A1;
 const float RS = 0.1;                   // Shunt resistor value (in ohms)
 const int RL = 10000;                   // RL of the INA169 (in ohms)
-const int R1 = 425;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
-const int R2 = 385;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
+const int R1 = 20;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
+const int R2 = 20;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
 
 float voltage_divide = ((float) R1 + R2) / (float) R2;  // Measured voltage is R2/(R1+R2) times actual V
 float current = 0.0;                    // Calculated current value
@@ -69,7 +69,7 @@ void setup() {
     digitalWrite(i, LOW);
   }
 
-  // Force unused analog pins to 0V to converse power
+  // Force unused analog pins to 0V to conserve power
   pinMode(A2, OUTPUT);
   pinMode(A3, OUTPUT);
   pinMode(A4, OUTPUT);
