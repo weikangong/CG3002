@@ -50,12 +50,11 @@ class ReceiveData(threading.Thread):
                 threading.Timer(nextTime - time.time(), self.readData).start()               
 
 class storeData(threading.Thread):
-        def __init__(self, buffer, port, powerList, current_move, client):
+        def __init__(self, buffer, port, powerList, client):
                 threading.Thread.__init__(self)
                 self.buffer = buffer
                 self.port = port
                 self.powerList = powerList
-                self.current_move = current_move
                 self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
                 self.machine_learning_data_set = []
                 self.client = client
@@ -64,13 +63,13 @@ class storeData(threading.Thread):
                 self.storeData()
                 
         def run_machine_learning(self):
-                test = pd.read_csv("./test.csv")
-                print(test.head())
+                #test = pd.read_csv("./test.csv")
+                #print(test.head())
                 #dalson, leonard, can use this function. data (2d array) is in self.machine_learning_data_set
                 predicted_action = self.actions[0] #use idle for testing
             
                 #once machine learning code is done, this function will send data
-                self.client.run(predicted_action)
+                self.client.prepareAndSendMessage(predicted_action)
         
         def storeData(self):
                 mutex.acquire()
@@ -140,14 +139,13 @@ class storeData(threading.Thread):
 
         
 class clientComms(threading.Thread):
-        def __init__(self, powerList, current_move):
+        def __init__(self, powerList):
                 threading.Thread.__init__(self)
                 self.socket = []
                 self.SECRET_KEY = "panickerpanicker"
                 self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
                 self.powerList = powerList
                 self.moveIndex = 0
-                self.current_move = current_move
                 
                 try:
                         self.setUpComms()
@@ -159,8 +157,10 @@ class clientComms(threading.Thread):
                 except KeyboardInterrupt:
                         sys.exit(1)
 
-        def run(self, action):
-                        
+        def run(self):
+            pass
+            
+        def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
             mutex.acquire()
@@ -179,6 +179,7 @@ class clientComms(threading.Thread):
 
             self.sendMessage(encodedMessage)
             mutex.release() #change this to be input
+            
 
         def setUpComms(self):
                 self.socket.append(sys.argv[1])
@@ -238,11 +239,11 @@ class Raspberry():
                 self.threads.append(receiveDataThread)
 
                 #comms thread
-                client = clientComms(powerList, current_move)
+                client = clientComms(powerList)
                 self.threads.append(client)
 
                 #store data thread
-                storeDataThread = storeData(self.buffer, self.port, powerList, current_move, client)
+                storeDataThread = storeData(self.buffer, self.port, powerList, client)
                 self.threads.append(storeDataThread)
                 
                 # Start threads
