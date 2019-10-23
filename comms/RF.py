@@ -12,9 +12,10 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
+from scipy import stats
 
-def test_RF(df):
-    filePath = "training-data-complete-23oct.csv"
+def train_RF():
+    filePath = "/home/pi/Desktop/cg3002/comms/training-data-complete-23oct.csv"
     dataset = pd.read_csv(filePath)
     # dataset = dataset.dropna()
 
@@ -30,7 +31,7 @@ def test_RF(df):
     #--------------------------------------------- Getting best params ---------------------------------------------------#
 
     k_range = list(range(1, 31))
-    print(k_range)
+    #print(k_range)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30)
 
@@ -75,9 +76,20 @@ def test_RF(df):
     # from sklearn.externals import joblib
     #
     # joblib.dump(rf, "RF.pkl", protocol=2)
+    
+    #result = stats.mode(rf.predict(df1))
+    
+    #print(result)
+    
+    return rf
 
-    result = stats.mode(model.predict(df1))
 
+def test_RF(rf, df1):
+    
+    result = stats.mode(rf.predict(df1))
+    
+    print(rf.predict(df1))
+    
     return result[0]
 
 
