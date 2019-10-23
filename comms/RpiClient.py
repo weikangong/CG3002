@@ -52,7 +52,7 @@ class ReceiveData(threading.Thread):
                         mutex.acquire()
                         self.buffer.put(rcv)
                         mutex.release()
-                threading.Timer(nextTime - time.time(), self.readData).start()               
+                threading.Timer(nextTime - time.time(), self.readData).start()
 
 class storeData(threading.Thread):
         def __init__(self, buffer, port, powerList, client):
@@ -66,7 +66,7 @@ class storeData(threading.Thread):
 
         def run(self):
                 self.storeData()
-                
+
         def run_machine_learning(self):
                 columnNames = ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']
                 dataset = pd.DataFrame(self.machine_learning_data_set, columns=columnNames)
@@ -101,7 +101,7 @@ class storeData(threading.Thread):
 
                 #once machine learning code is done, this function will send data
                 self.client.prepareAndSendMessage(predicted_action)
-        
+
         def storeData(self):
                 mutex.acquire()
                 dataList = self.buffer.get()
@@ -109,39 +109,39 @@ class storeData(threading.Thread):
 
                 if dataList: #list not empty
                         for data in dataList:
-       
+
                             check_sum = data.rsplit(",",1)[1].rstrip('\x00')
-                            
+
                             data = data.rsplit(",",1)[0]
-                            
+
                             test_sum = reduce(operator.xor, [ord(c) for c in data])
-                            
+
                             ack = False
                             if True:
                             #if test_sum == int(check_sum.rstrip('\0')):
                                     ack = True
                                     #print("checksum success")
                                     mutex.acquire()
-                                    
+
                                     data = [x.rstrip('\x00') for x in data.split(',')]
-                                    
+
                                     self.powerList[0] = data[13]
                                     self.powerList[1] = data[14]
                                     self.powerList[2] = data[15]
                                     self.powerList[3] = data[16]
-                                    
+
                                     self.nextID = (int(data[0]) + 1)%self.buffer.getSize()
                                     mutex.release()
-                                    
+
                                     #storing into csv
                                     with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
                                         filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
                                         filewriter.writerow(data)
-                                    
+
                                     #storing into array
                                     self.machine_learning_data_set.append(data)
-                                        
-                                    
+
+
                             else:
                                     ack = False                        #some samples has problem
                                     print('checksum failed')
@@ -161,14 +161,14 @@ class storeData(threading.Thread):
                             mutex.acquire()
                             self.buffer.nack(self.nextID)
                             mutex.release()
-                            
+
                         if len(self.machine_learning_data_set) > 150:
                             self.run_machine_learning()
                             self.machine_learning_data_set = []
- 
+
                 threading.Timer(0.06, self.storeData).start()
 
-        
+
 class clientComms(threading.Thread):
         def __init__(self, powerList):
                 threading.Thread.__init__(self)
@@ -177,40 +177,40 @@ class clientComms(threading.Thread):
                 self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
                 self.powerList = powerList
                 self.moveIndex = 0
-                
+
                 try:
                         self.setUpComms()
                         self.connectToServer(self.socket[0], self.socket[1])
-                        
+
                         time.sleep(3)
                         self.connectToServer(self.socket[0], self.socket[1])
-                
+
                 except KeyboardInterrupt:
                         sys.exit(1)
 
         def run(self):
             pass
-            
+
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
             mutex.acquire()
-            message = ("#" + action+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()                             
+            message = ("#" + action+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()
             print("sent message: "+message)
             paddedMessage = self.padMessage(message, AES.block_size)
             encryptedMessage = cipher.encrypt(paddedMessage)
             encodedMessage = base64.b64encode(iv + encryptedMessage)
             time.sleep(3)
-            
+
             #writing csv file, can delete
             with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
                                         filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
                                         filewriter.writerow(action)
-          
+
 
             self.sendMessage(encodedMessage)
             mutex.release() #change this to be input
-            
+
 
         def setUpComms(self):
                 self.socket.append(sys.argv[1])
@@ -223,7 +223,7 @@ class clientComms(threading.Thread):
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.HOST, self.PORT))
                 print("connected to server "+self.HOST+", port: "+str(self.PORT))
-                
+
         def padMessage(self, payload, block_size, style = 'pkcs7'):
             padding_len = block_size - len(payload) % block_size
             if style == 'pkcs7':
@@ -234,7 +234,7 @@ class clientComms(threading.Thread):
                 padding = bchr(128) + bchr(0) * (padding_len - 1)
             else:
                 raise ValueError("Unknown Padding STyle")
-        
+
             return payload + padding
 
         def sendMessage(self, text):
@@ -262,11 +262,11 @@ class Raspberry():
                     time.sleep(1)
                 self.port.write('A');
                 print ('Connected')
-                
+
                 powerList = [0,0,0,0]
 
                 #receive data thread
-                receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 120)
+                receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
                 self.threads.append(receiveDataThread)
 
                 #comms thread
@@ -276,7 +276,7 @@ class Raspberry():
                 #store data thread
                 storeDataThread = storeData(self.buffer, self.port, powerList, client)
                 self.threads.append(storeDataThread)
-                
+
                 # Start threads
                 for thread in self.threads:
                     # thread.daemon = True # Runs in background
