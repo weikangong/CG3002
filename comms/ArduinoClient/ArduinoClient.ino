@@ -7,12 +7,14 @@
 #include <avr/power.h>
 
 // Packet definitons
+// Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, cumpower, checksum
+// Packet max length: 2 (ID) + 8 (char per data point) * 16 (data point) + 3 (checksum) + 17 (delimiter) >= 150
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
 const int MAX_POWER_POINTS = 4;         // 4 different power parameters
-const int MAX_PACKET_SIZE = 120;
+const int MAX_PACKET_SIZE = 150;
 const int MAX_PACKET = 30;
 
-int ackID = 0; 
+int ackID = 0;
 int sendID = 0;
 int slotID = 0;
 char packetBuffer[MAX_PACKET_SIZE * MAX_PACKET];
@@ -234,7 +236,7 @@ void formatMessage() {
 
   for (int i = 0; i < MAX_DATA_POINTS + MAX_POWER_POINTS; i++) {
     strcat(tempStr, ","); // Delimiter
-    char floatChar[6];
+    char floatChar[8];
     if (i < MAX_DATA_POINTS) dtostrf(sensorData[i], 0, 2, floatChar); // Converts floats to str, inputs: val, min char, char after dp, dest
     else dtostrf(powerData[i-MAX_DATA_POINTS], 0, 2, floatChar);
 
@@ -245,7 +247,7 @@ void formatMessage() {
   int len = strlen(tempStr);
   for (int i = 0; i < len; i++) checksum ^= tempStr[i];
 
-  char checksumChar[6];
+  char checksumChar[3];
   itoa((int) checksum, checksumChar, 10);
 
   strcat(tempStr, ",");
