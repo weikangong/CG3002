@@ -15,7 +15,12 @@ from Crypto.Util.py3compat import *
 
 import base64
 import numpy as np
+import pandas as pd
 import math
+
+from sklearn.externals import joblib
+from scipy import stats
+from sklearn import preprocessing
 
 #global variables
 mutex = threading.Lock()
@@ -63,11 +68,37 @@ class storeData(threading.Thread):
                 self.storeData()
                 
         def run_machine_learning(self):
-                #test = pd.read_csv("./test.csv")
-                #print(test.head())
-                #dalson, leonard, can use this function. data (2d array) is in self.machine_learning_data_set
-                predicted_action = self.actions[0] #use idle for testing
-            
+                columnNames = ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3']
+                dataset = pd.DataFrame(self.machine_learning_data_set, columns=columnNames)
+                dataset = dataset.iloc[:, :10]
+
+                N = 30
+
+                df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // N], axis=0).mean()
+                df_mean1.rename(
+                    columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
+                             'z2': 'z2_mean', 'x3': 'x3_mean', 'y3': 'y3_mean', 'z3': 'z3_mean'}, inplace=True)
+
+                df_max1 = dataset.groupby([np.arange(len(dataset.index)) // N], axis=0).max()
+                df_max1.rename(columns={'x1': 'x1_max', 'y1': 'y1_max', 'z1': 'z1_max', 'x2': 'x2_max', 'y2': 'y2_max',
+                                        'z2': 'z2_max',
+                                        'x3': 'x3_max', 'y3': 'y3_max', 'z3': 'z3_max'}, inplace=True)
+
+                df_var1 = dataset.groupby([np.arange(len(dataset.index)) // N], axis=0).var()
+                df_var1.rename(columns={'x1': 'x1_var', 'y1': 'y1_var', 'z1': 'z1_var', 'x2': 'x2_var', 'y2': 'y2_var',
+                                        'z2': 'z2_var',
+                                        'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var'}, inplace=True)
+
+                df1 = df_mean1.join(df_max1)
+                df1 = df1.join(df_var1)
+
+                model = joblib.load("KNN.pkl")
+                model.predict(df1)
+
+                result = stats.mode(model.predict(df1))
+
+                predicted_action = result[0]
+
                 #once machine learning code is done, this function will send data
                 self.client.prepareAndSendMessage(predicted_action)
         
