@@ -24,7 +24,7 @@ from sklearn import preprocessing
 from RF import test_RF
 from RF import train_RF
 
-# Global variables
+# Constant variables
 mutex = threading.Lock()
 packetSize = 150
 sampleSize = 30
@@ -94,7 +94,7 @@ class MachineLearning(threading.Thread):
                             print(result[0])
                             self.client.prepareAndSendMessage(result[0])
                         else:
-                            print("result = idle. not sending message")
+                            print('Result = idle, not sending message')
                         self.datasetList[:] = []
                 threading.Timer(self.period, self.runMachineLearning).start()
 
@@ -143,8 +143,8 @@ class StoreData(threading.Thread):
 
             if bufferList:
                 for packet in bufferList:
-                    checksum = int(packet.rsplit(",", 1)[1])
-                    packet = packet.rsplit(",", 1)[0]
+                    checksum = int(packet.rsplit(',', 1)[1])
+                    packet = packet.rsplit(',', 1)[0]
                     testsum = reduce(operator.xor, [ord(c) for c in packet])
                     ack = False
 
@@ -187,29 +187,29 @@ class StoreData(threading.Thread):
             threading.Timer(self.period, self.storeData).start()
 
 
-class ClientComms(threading.Thread):
+class ClientComms():
         def __init__(self, powerList):
             threading.Thread.__init__(self)
-            self.SECRET_KEY = "panickerpanicker"
+            self.SECRET_KEY = 'panickerpanicker'
             self.HOST = sys.argv[1]
             self.PORT = int(sys.argv[2])
             self.powerList = powerList
             self.connectToServer()
 
         def connectToServer(self):
-            print("Attempting to connect to server")
+            print('Attempting to connect to server')
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
-            print("Connected to server " + self.HOST + ", port: " + str(self.PORT))
+            print('Connected to server ' + self.HOST + ', port: ' + str(self.PORT))
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
             mutex.acquire()
-            message = ("#" + action + "|" + str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()
-            print("sent message: " + message)
+            message = ('#' + action + '|' + str(self.powerList[0]) + '|' + str(self.powerList[1]) + '|' + str(self.powerList[2]) + '|' + str(self.powerList[3]) + '|').encode('utf8').strip()
+            print('Sent message: ' + message)
             paddedMessage = self.padMessage(message, AES.block_size)
             encryptedMessage = cipher.encrypt(paddedMessage)
             encodedMessage = base64.b64encode(iv + encryptedMessage)
@@ -225,7 +225,7 @@ class ClientComms(threading.Thread):
             elif style == 'iso786':
                 padding = bchr(128) + bchr(0) * (padding_len - 1)
             else:
-                raise ValueError("Unknown Padding Style")
+                raise ValueError('Unknown Padding Style')
 
             return payload + padding
 
@@ -238,7 +238,7 @@ class ClientComms(threading.Thread):
 class Raspberry():
         def __init__(self):
             self.threads = []
-            self.buffer = CircularBuffer.CircularBuffer(30)
+            self.buffer = CircularBuffer.CircularBuffer(sampleSize)
             self.client = []
             self.datasetList = []
             self.powerList = [0, 0, 0, 0]
@@ -247,7 +247,7 @@ class Raspberry():
                 if len(sys.argv) != 4:
                     print('Invalid number of arguments')
                     print('python RpiClient.py [IP address] [Port] [csv <True, False>]')
-                    sys.exit()
+                    sys.exit(1)
 
                 try:
                     # Initalize UART Port
@@ -282,6 +282,7 @@ class Raspberry():
 
                 except KeyboardInterrupt:
                     self.port.write('R') # Resets the Arduino
+                    print('Exiting...')
                     sys.exit(1)
 
 if __name__ == '__main__':
