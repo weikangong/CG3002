@@ -29,26 +29,26 @@ mutex = threading.Lock()
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
-                threading.Thread.__init__(self)
-                self.buffer = buffer
-                self.port = port
-                self.period = period
-                self.packetSize = packetSize
+            threading.Thread.__init__(self)
+            self.buffer = buffer
+            self.port = port
+            self.period = period
+            self.packetSize = packetSize
 
         def run(self):
-                self.readData()
+            self.receiveData()
 
          # Read data from Arduino
          # Packet format: Packet ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4,
          # voltage, current, power, cumpower, checksum
-        def readData(self):
-                nextTime = time.time() + self.period
-                if not self.buffer.isFull():
-                        rcv = self.port.read(self.packetSize)
-                        mutex.acquire()
-                        self.buffer.put(rcv)
-                        mutex.release()
-                threading.Timer(nextTime - time.time(), self.readData).start()
+        def receiveData(self):
+            nextTime = time.time() + self.period
+            if not self.buffer.isFull():
+                rcv = self.port.read(self.packetSize)
+                mutex.acquire()
+                self.buffer.put(rcv)
+                mutex.release()
+            threading.Timer(nextTime - time.time(), self.receiveData).start()
 
 class MachineLearning(threading.Thread):
         def __init__(self, client, datasetList, period, N):
@@ -128,76 +128,65 @@ class MachineLearning(threading.Thread):
 
 class StoreData(threading.Thread):
         def __init__(self, buffer, port, client, datasetList, powerList):
-                threading.Thread.__init__(self)
-                self.client = client
-                self.buffer = buffer
-                self.port = port
-                self.powerList = powerList
-                self.datasetList = datasetList
+            threading.Thread.__init__(self)
+            self.client = client
+            self.buffer = buffer
+            self.port = port
+            self.powerList = powerList
+            self.datasetList = datasetList
 
         def run(self):
-                self.storeData()
+            self.storeData()
 
         def storeData(self):
-                mutex.acquire()
-                dataList = self.buffer.get()
-                mutex.release()
+            mutex.acquire()
+            dataList = self.buffer.get()
+            mutex.release()
 
-                if dataList: #list not empty
-                        for data in dataList:
+            if dataList:
+                for data in dataList:
+                    check_sum = data.rsplit(",",1)[1].rstrip('\x00')
+                    data = data.rsplit(",",1)[0]
+                    test_sum = reduce(operator.xor, [ord(c) for c in data])
+                    ack = False
 
-                            check_sum = data.rsplit(",",1)[1].rstrip('\x00')
+                    if True:
+                    #if test_sum == int(check_sum.rstrip('\0')):
+                        ack = True
+                        data = [x.strip('\x00') for x in data.split(',')]
 
-                            data = data.rsplit(",",1)[0]
+                        self.powerList[0] = data[13]
+                        self.powerList[1] = data[14]
+                        self.powerList[2] = data[15]
+                        self.powerList[3] = data[16]
 
-                            test_sum = reduce(operator.xor, [ord(c) for c in data])
+                        self.nextID = (int(data[0]) + 1) % self.buffer.getSize()
 
-                            ack = False
-                            if True:
-                            #if test_sum == int(check_sum.rstrip('\0')):
-                                    ack = True
-                                    #print("checksum success")
-                                    #mutex.acquire()
+                        with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
+                            filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
+                            filewriter.writerow(data)
+                        self.datasetList.append(data)
 
-                                    data = [x.strip('\x00') for x in data.split(',')]
+                    else:
+                        ack = False
+                        print('Checksum failed')
+                        break
 
-                                    self.powerList[0] = data[13]
-                                    self.powerList[1] = data[14]
-                                    self.powerList[2] = data[15]
-                                    self.powerList[3] = data[16]
-
-                                    self.nextID = (int(data[0]) + 1)%self.buffer.getSize()
-
-                                    #storing into csv
-                                    with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
-                                        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-                                        filewriter.writerow(data)
-
-                                    #storing into array
-                                    self.datasetList.append(data)
-                                    #mutex.release()
-
-
-                            else:
-                                    ack = False                        #some samples has problem
-                                    print('checksum failed')
-                                    break
-
-                        if ack:
-                                #print("sending ack")
-                                self.port.write('A')
-                                self.port.write(chr(self.nextID))
-                                mutex.acquire()
-                                self.buffer.ack(self.nextID)
-                                mutex.release()
-                        else:
-                            #print("no ack")
-                            self.port.write('N')
-                            self.port.write(chr(self.nextID))
-                            mutex.acquire()
-                            self.buffer.nack(self.nextID)
-                            mutex.release()
-                threading.Timer(0.06, self.storeData).start()
+                if ack:
+                        #print("sending ack")
+                        self.port.write('A')
+                        self.port.write(chr(self.nextID))
+                        mutex.acquire()
+                        self.buffer.ack(self.nextID)
+                        mutex.release()
+                else:
+                    #print("no ack")
+                    self.port.write('N')
+                    self.port.write(chr(self.nextID))
+                    mutex.acquire()
+                    self.buffer.nack(self.nextID)
+                    mutex.release()
+            threading.Timer(0.06, self.storeData).start()
 
 
 class ClientComms(threading.Thread):
@@ -273,7 +262,7 @@ class Raspberry():
                         print ('Try to connect to Arduino')
                         self.port.write('S')
                         time.sleep(1)
-                    self.port.write('A');
+                    self.port.write('A')
                     print ('Connected')
 
                     # Client to Server Connection
