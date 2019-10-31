@@ -1,6 +1,6 @@
 ## CG3002: Dance
 
-* [Wiki Home][wiki]
+Head over to our [Wiki Home][wiki] to find out more!
 
 <p align="center">
   <img src="/images/main.jpg">
