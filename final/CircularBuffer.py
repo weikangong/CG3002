@@ -8,7 +8,7 @@ class CircularBuffer():
 
         def put(self, packet):
             result = [x.rstrip('\x00') for x in packet.split(',')]
-            print("nextID: " + self.nextID + " " + result[0])
+            print("nextID: " + str(self.nextID) + " " + str(result[0]))
             packetID = packet.split(',', 1)[0];
             print("packetID: " + packetID);
             if self.nextID == int(result[0]):
