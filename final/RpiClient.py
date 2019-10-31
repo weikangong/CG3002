@@ -150,7 +150,7 @@ class StoreData(threading.Thread):
                     testsum = reduce(operator.xor, [ord(c) for c in packet])
                     ack = False
 
-                    if testsum == int(check_sum):
+                    if testsum == int(checksum):
                         ack = True
 
                         self.powerList[0] = packet[13]
