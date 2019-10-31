@@ -281,7 +281,7 @@ class Raspberry():
                         thread.daemon = True
                         thread.start()
 
-                    # Prevents KeyboardInterrupt being ignored
+                    # Prevents KeyboardInterrupt from being ignored
                     while True:
 	                    time.sleep(0.001)
                 except KeyboardInterrupt:
