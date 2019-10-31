@@ -134,7 +134,6 @@ class StoreData(threading.Thread):
             self.port = port
             self.powerList = powerList
             self.datasetList = datasetList
-            self.nextID = 0
 
         def run(self):
             self.storeData()
@@ -147,14 +146,13 @@ class StoreData(threading.Thread):
             if bufferList:
                 for packet in bufferList:
                     checksum = int(packet.rsplit(",", 1)[1])
+                    packet = packet.rsplit(",", 1)[0]
                     testsum = reduce(operator.xor, [ord(c) for c in packet])
-                    print(checksum)
-                    print(testsum)
                     ack = False
 
                     if testsum == checksum:
                         ack = True
-                        packet = packet.rsplit(",", 1)[0].split(',')
+                        packet = packet.split(',')
 
                         self.powerList[0] = packet[13]
                         self.powerList[1] = packet[14]
