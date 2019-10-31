@@ -148,6 +148,7 @@ class StoreData(threading.Thread):
                     checksum = int(packet.rsplit(",", 1)[1])
                     packet = packet.rsplit(",", 1)[0]
                     testsum = reduce(operator.xor, [ord(c) for c in packet])
+                    print("checksum: " + str(checksum) + " testsum: " + str(testsum))
                     ack = False
 
                     if testsum == checksum:
