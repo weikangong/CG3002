@@ -90,13 +90,13 @@ class MachineLearning(threading.Thread):
 
                         #once machine learning code is done, this function will send data
 
-                        if result[0] != "idle" :
-                            print(result[0])
+                        if result[0] != 'idle':
+                            print('Result = ' + result[0])
                             self.client.prepareAndSendMessage(result[0])
                         else:
                             print('Result = idle, not sending message')
                         self.datasetList[:] = []
-                threading.Timer(self.period, self.runMachineLearning).start()
+                threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -137,6 +137,7 @@ class StoreData(threading.Thread):
             self.storeData()
 
         def storeData(self):
+            nextTime = time.time() + self.period
             mutex.acquire()
             bufferList = self.buffer.get()
             mutex.release()
@@ -184,7 +185,7 @@ class StoreData(threading.Thread):
                     self.buffer.nack(self.nextID)
                     mutex.release()
 
-            threading.Timer(self.period, self.storeData).start()
+            threading.Timer(nextTime - time.time(), self.storeData).start()
 
 
 class ClientComms():
