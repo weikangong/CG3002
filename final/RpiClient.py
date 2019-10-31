@@ -279,47 +279,47 @@ class clientComms(threading.Thread):
 
 class Raspberry():
         def __init__(self):
-                self.threads = []
-                self.buffer = CircularBuffer.CircularBuffer(30)
-                self.machine_learning_data_set = []
+            self.threads = []
+            self.buffer = CircularBuffer.CircularBuffer(30)
+            self.machine_learning_data_set = []
 
         def main(self):
                 try:
-                        # Set up port connection
-                        self.port=serial.Serial("/dev/serial0", baudrate=115200)
-                        self.port.reset_input_buffer()
-                        self.port.reset_output_buffer()
+                    # Set up port connection
+                    self.port=serial.Serial("/dev/serial0", baudrate=115200)
+                    self.port.reset_input_buffer()
+                    self.port.reset_output_buffer()
 
-                        # Handshaking
-                        while(self.port.in_waiting == 0 or self.port.read() != 'A'):
-                            print ('Try to connect to Arduino')
-                            self.port.write('S')
-                            time.sleep(1)
-                        self.port.write('A');
-                        print ('Connected')
+                    # Handshaking
+                    while(self.port.in_waiting == 0 or self.port.read() != 'A'):
+                        print ('Try to connect to Arduino')
+                        self.port.write('S')
+                        time.sleep(1)
+                    self.port.write('A');
+                    print ('Connected')
 
-                        powerList = [0,0,0,0]
+                    powerList = [0,0,0,0]
 
-                        receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
-                        self.threads.append(receiveDataThread)
+                    receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
+                    self.threads.append(receiveDataThread)
 
-                        client = clientComms(powerList)
-                        self.threads.append(client)
+                    client = clientComms(powerList)
+                    self.threads.append(client)
 
-                        storeDataThread = storeData(self.buffer, self.port, powerList, client, self.machine_learning_data_set)
-                        self.threads.append(storeDataThread)
+                    storeDataThread = storeData(self.buffer, self.port, powerList, client, self.machine_learning_data_set)
+                    self.threads.append(storeDataThread)
 
-                        MachineLearningThread = MachineLearning(5, client, self.machine_learning_data_set, 30)
-                        self.threads.append(MachineLearningThread)
+                    MachineLearningThread = MachineLearning(5, client, self.machine_learning_data_set, 30)
+                    self.threads.append(MachineLearningThread)
 
-                        # Start threads
-                        for thread in self.threads:
-                            # thread.daemon = True # Runs in background
-                            thread.start()
+                    # Start threads
+                    for thread in self.threads:
+                        # thread.daemon = True # Runs in background
+                        thread.start()
 
                 except KeyboardInterrupt:
-                        self.port.write('R') # Resets the Arduino
-                        sys.exit(1)
+                    self.port.write('R') # Resets the Arduino
+                    sys.exit(1)
 
 if __name__ == '__main__':
         pi = Raspberry()
