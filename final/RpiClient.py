@@ -145,14 +145,13 @@ class StoreData(threading.Thread):
 
             if bufferList:
                 for packet in bufferList:
-                    checksum = packet.rsplit(",", 1)[1]
-                    packet = packet.rsplit(",", 1)[0]
+                    checksum = int(packet.rsplit(",", 1)[1])
                     testsum = reduce(operator.xor, [ord(c) for c in packet])
                     ack = False
 
-                    if testsum == int(checksum):
+                    if testsum == checksum:
                         ack = True
-                        packet = packet.split(',')
+                        packet = packet.rsplit(",", 1)[0].split(',')
 
                         self.powerList[0] = packet[13]
                         self.powerList[1] = packet[14]
