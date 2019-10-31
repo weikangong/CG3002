@@ -71,14 +71,15 @@ class MachineLearning(threading.Thread):
         def run_machine_learning(self):
                 nextTime = time.time() + self.period
                 #print(str(self.machine_learning_data_set))
-                if len(self.machine_learning_data_set) >= 300:
+                if len(self.machine_learning_data_set) >= 180:
                         #print(len(self.machine_learning_data_set))
                         #print(str(self.machine_learning_data_set))
                         dataset = pd.DataFrame(self.machine_learning_data_set)
                         dataset = dataset.reset_index()
                         #print(dataset.head())
-                        dataset = dataset.iloc[10:-10, 1:14]
+                        dataset = dataset.iloc[40:-10, 1:14]
                         
+                        #print(dataset.head())
                         dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
                         dataset = dataset.astype('float32')
                         dataset = dataset.drop(columns=['index'])
@@ -120,11 +121,16 @@ class MachineLearning(threading.Thread):
                         predicted_action = result
 
                         #once machine learning code is done, this function will send data
-                        self.client.prepareAndSendMessage(result[0])
+                        
+                        if result[0] != "idle" : 
+                                print(result[0])
+                                self.client.prepareAndSendMessage(result[0])
+                        else:
+                                print("result = idle. not sending message")
                         #mutex.acquire()
                         self.machine_learning_data_set[:] = []
                         #mutex.release()
-                threading.Timer(10 , self.run_machine_learning).start()
+                threading.Timer(6 , self.run_machine_learning).start()
 
 class storeData(threading.Thread):
         def __init__(self, buffer, port, powerList, client, machine_learning_data_set):
@@ -206,7 +212,7 @@ class clientComms(threading.Thread):
                 threading.Thread.__init__(self)
                 self.socket = []
                 self.SECRET_KEY = "panickerpanicker"
-                self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
+                self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulders', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
                 self.powerList = powerList
                 self.moveIndex = 0
 
@@ -235,9 +241,9 @@ class clientComms(threading.Thread):
             time.sleep(3)
 
             #writing csv file, can delete
-            with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
-                                        filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-                                        filewriter.writerow(action)
+            #with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
+             #                           filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
+              #                          filewriter.writerow(action)
 
 
             self.sendMessage(encodedMessage)
