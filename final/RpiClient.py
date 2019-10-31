@@ -151,7 +151,9 @@ class StoreData(threading.Thread):
                     ack = False
 
                     if testsum == int(checksum):
+                        print(packet)
                         ack = True
+                        packet = [x.strip('\x00') for x in packet.split(',')]
 
                         self.powerList[0] = packet[13]
                         self.powerList[1] = packet[14]
