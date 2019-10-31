@@ -140,52 +140,48 @@ class StoreData(threading.Thread):
 
         def storeData(self):
             mutex.acquire()
-            dataList = self.buffer.get()
+            bufferList = self.buffer.get()
             mutex.release()
 
-            if dataList:
-                for data in dataList:
-                    check_sum = data.rsplit(",",1)[1].rstrip('\x00')
-                    data = data.rsplit(",",1)[0]
-                    test_sum = reduce(operator.xor, [ord(c) for c in data])
+            if bufferList:
+                for packet in bufferList:
+                    checksum = packet.rsplit(",", 1)[1]
+                    packet = packet.rsplit(",", 1)[0]
+                    testsum = reduce(operator.xor, [ord(c) for c in packet])
                     ack = False
 
-                    if True:
-                    #if test_sum == int(check_sum.rstrip('\0')):
+                    if testsum == int(check_sum):
                         ack = True
-                        data = [x.strip('\x00') for x in data.split(',')]
 
-                        self.powerList[0] = data[13]
-                        self.powerList[1] = data[14]
-                        self.powerList[2] = data[15]
-                        self.powerList[3] = data[16]
+                        self.powerList[0] = packet[13]
+                        self.powerList[1] = packet[14]
+                        self.powerList[2] = packet[15]
+                        self.powerList[3] = packet[16]
 
-                        self.nextID = (int(data[0]) + 1) % self.buffer.getSize()
+                        self.nextID = (int(packet[0]) + 1) % self.buffer.getSize()
 
                         with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
-                            filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-                            filewriter.writerow(data)
-                        self.datasetList.append(data)
-
+                            filewriter = csv.writer(csvfile, delimiter = ',', quoting = csv.QUOTE_NONE)
+                            filewriter.writerow(packet)
+                        self.datasetList.append(packet)
                     else:
                         ack = False
                         print('Checksum failed')
                         break
 
                 if ack:
-                        #print("sending ack")
-                        self.port.write('A')
-                        self.port.write(chr(self.nextID))
-                        mutex.acquire()
-                        self.buffer.ack(self.nextID)
-                        mutex.release()
+                    self.port.write('A')
+                    self.port.write(chr(self.nextID))
+                    mutex.acquire()
+                    self.buffer.ack(self.nextID)
+                    mutex.release()
                 else:
-                    #print("no ack")
                     self.port.write('N')
                     self.port.write(chr(self.nextID))
                     mutex.acquire()
                     self.buffer.nack(self.nextID)
                     mutex.release()
+
             threading.Timer(0.06, self.storeData).start()
 
 

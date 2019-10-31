@@ -8,7 +8,8 @@
 
 // Packet definitons
 // Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, cumpower, checksum
-// Packet max length: 2 (ID) + 8 (char per data point) * 16 (data point) + 3 (checksum) + 17 (delimiter) = 150
+// Packet max length: 2 (ID) + 8 (char per sensor data) * 12 (12 sensor data) + 5 (char per power data) * 4 (4 power data)
+// + 4 (checksum) + 18 (delimiter) = 140 bytes
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
 const int MAX_POWER_POINTS = 4;         // 4 different power parameters
 const int MAX_PACKET_SIZE = 150;
@@ -249,11 +250,12 @@ void formatMessage() {
   int len = strlen(tempStr);
   for (int i = 0; i < len; i++) checksum ^= tempStr[i];
 
-  char checksumChar[3];
+  char checksumChar[4];
   itoa((int) checksum, checksumChar, 10);
 
   strcat(tempStr, ",");
   strcat(tempStr, checksumChar);
+  strcat(tempStr, ",");
 
   int startIndex = slotID * MAX_PACKET_SIZE;
   for (int i = startIndex; i < startIndex + MAX_PACKET_SIZE; i++) packetBuffer[i] = tempStr[i-startIndex];
