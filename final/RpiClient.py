@@ -145,6 +145,7 @@ class StoreData(threading.Thread):
 
             if bufferList:
                 for packet in bufferList:
+                    print(str(packet))
                     checksum = packet.rsplit(",", 1)[1]
                     print(checksum)
                     packet = packet.rsplit(",", 1)[0]
