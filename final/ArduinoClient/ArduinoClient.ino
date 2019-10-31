@@ -188,13 +188,9 @@ void handshake() {
       Serial1.write('A');
       Serial.println("Ack Handshake"); 
       break;
-    } else if (Serial1.available() && Serial1.read() == 'R') {
-      resetFunc(); // Resets Arduino
-    } else if (Serial.available() && Serial.read() == 'S') { // Test Ack Handshake
+    }else if (Serial.available() && Serial.read() == 'S') { // Test Ack Handshake
       Serial.println("Ack Handshake");
       break;
-    } else if (Serial.available() && Serial.read() == 'R') { // Test Reset
-      resetFunc(); // Resets Arduino
     }
   }
 
@@ -203,13 +199,9 @@ void handshake() {
       Serial.println("Handshake complete");
       delay(500);
       break;
-    } else if (Serial1.available() && Serial1.read() == 'R') {
-      resetFunc(); // Resets Arduino
     } else if (Serial.available() && Serial.read() == 'A') { // Test Ack Handshake
       Serial.println("Handshake complete");
       break;
-    } else if (Serial.available() && Serial.read() == 'R') { // Test Reset
-      resetFunc(); // Resets Arduino
     }
   }
 }
@@ -297,7 +289,8 @@ void getResponse() {
     int packetID = Serial1.read();
     ackID = packetID;
     sendID = packetID; // Resend previous frame 
-  } else if (Serial1.available() && val == 'R') {
+  } else if (val == 'R') { // Do not need to check Serial1.available() as RpiClient has closed it
+    Serial.print("RESETTING");
     resetFunc(); // Resets Arduino
   }
 }
