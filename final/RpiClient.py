@@ -135,7 +135,7 @@ class StoreData(threading.Thread):
             self.powerList = powerList
             self.datasetList = datasetList
             self.nextID = 0
-            self.printCSV = sys.argv[2].lower() == 'true'
+            self.printCSV = sys.argv[3].lower() == 'true'
 
         def run(self):
             self.storeData()
@@ -163,8 +163,8 @@ class StoreData(threading.Thread):
 
                         self.nextID = (int(packet[0]) + 1) % self.buffer.getSize()
                         self.datasetList.append(packet)
-                        
-                        if printCSV:
+
+                        if self.printCSV:
                             with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
                                 filewriter = csv.writer(csvfile, delimiter = ',', quoting = csv.QUOTE_NONE)
                                 filewriter.writerow(packet)
