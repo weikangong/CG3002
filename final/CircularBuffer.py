@@ -7,7 +7,7 @@ class CircularBuffer():
             self.full = False
 
         def put(self, packet):
-            result = [x.rstrip('\x00') for x in packet.split(',')
+            result = [x.rstrip('\x00') for x in packet.split(',')]
             if self.nextID == int(result[0]):
                 if self.ackID == (self.nextID + 1) % self.size:
                     self.full = True
