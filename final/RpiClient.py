@@ -132,7 +132,7 @@ class MachineLearning(threading.Thread):
                         #mutex.release()
                 threading.Timer(6 , self.run_machine_learning).start()
 
-class storeData(threading.Thread):
+class StoreData(threading.Thread):
         def __init__(self, buffer, port, powerList, client, machine_learning_data_set):
                 threading.Thread.__init__(self)
                 self.buffer = buffer
@@ -210,15 +210,11 @@ class storeData(threading.Thread):
 class ClientComms(threading.Thread):
         def __init__(self, powerList):
             threading.Thread.__init__(self)
+            self.SECRET_KEY = "panickerpanicker"
             self.HOST = sys.argv[1]
             self.PORT = int(sys.argv[2])
-            self.SECRET_KEY = "panickerpanicker"
             self.powerList = powerList
-
             self.connectToServer()
-
-        def run(self):
-            pass
 
         def connectToServer(self):
             print("Attempting to connect to server")
@@ -233,12 +229,12 @@ class ClientComms(threading.Thread):
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
             mutex.acquire()
             message = ("#" + action + "|" + str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()
-            print("sent message: "+message)
+            print("sent message: " + message)
             paddedMessage = self.padMessage(message, AES.block_size)
             encryptedMessage = cipher.encrypt(paddedMessage)
             encodedMessage = base64.b64encode(iv + encryptedMessage)
             self.sendMessage(encodedMessage)
-            mutex.release() #change this to be input
+            mutex.release()
 
         def padMessage(self, payload, block_size, style = 'pkcs7'):
             padding_len = block_size - len(payload) % block_size
@@ -263,6 +259,7 @@ class Raspberry():
         def __init__(self):
             self.threads = []
             self.buffer = CircularBuffer.CircularBuffer(30)
+            self.client = []
             self.machine_learning_data_set = []
             self.powerList = [0, 0, 0, 0]
 
@@ -287,15 +284,16 @@ class Raspberry():
                     print ('Connected')
 
                     # Client to Server Connection
-                    client = ClientComms(self.powerList)
+                    self.client = ClientComms(self.powerList)
 
+                    # Input: buffer, port, interval, packet size
                     receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
                     self.threads.append(receiveDataThread)
 
-                    storeDataThread = storeData(self.buffer, self.port, self.powerList, client, self.machine_learning_data_set)
+                    storeDataThread = StoreData(self.buffer, self.port, self.powerList, self.client, self.machine_learning_data_set)
                     self.threads.append(storeDataThread)
 
-                    MachineLearningThread = MachineLearning(5, client, self.machine_learning_data_set, 30)
+                    MachineLearningThread = MachineLearning(5, self.client, self.machine_learning_data_set, 30)
                     self.threads.append(MachineLearningThread)
 
                     # Start threads
