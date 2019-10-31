@@ -292,7 +292,7 @@ void getResponse() {
     ackID = packetID;
     sendID = packetID; // Resend previous frame 
   } else if (val == 'R') { // Do not need to check Serial1.available() as RpiClient has closed it
-    Serial.print("RESETTING");
+    Serial.print("Resetting");
     resetFunc(); // Resets Arduino
   }
 }

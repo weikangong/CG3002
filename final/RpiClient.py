@@ -134,6 +134,7 @@ class StoreData(threading.Thread):
             self.port = port
             self.powerList = powerList
             self.datasetList = datasetList
+            self.nextID = 0
 
         def run(self):
             self.storeData()
