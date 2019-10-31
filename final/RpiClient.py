@@ -281,6 +281,9 @@ class Raspberry():
                         # thread.daemon = True # Runs in background
                         thread.start()
 
+                    # Prevents KeyboardInterrupt being ignored
+                    while True:
+	                    time.sleep(0.001)
                 except KeyboardInterrupt:
                     self.port.write('R') # Resets the Arduino
                     print('Exiting...')
