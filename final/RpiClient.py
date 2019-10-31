@@ -134,6 +134,8 @@ class StoreData(threading.Thread):
             self.port = port
             self.powerList = powerList
             self.datasetList = datasetList
+            self.nextID = 0
+            self.printCSV = sys.argv[2].lower() == 'true'
 
         def run(self):
             self.storeData()
@@ -160,11 +162,12 @@ class StoreData(threading.Thread):
                         self.powerList[3] = packet[16]
 
                         self.nextID = (int(packet[0]) + 1) % self.buffer.getSize()
-
-                        with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
-                            filewriter = csv.writer(csvfile, delimiter = ',', quoting = csv.QUOTE_NONE)
-                            filewriter.writerow(packet)
                         self.datasetList.append(packet)
+                        
+                        if printCSV:
+                            with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
+                                filewriter = csv.writer(csvfile, delimiter = ',', quoting = csv.QUOTE_NONE)
+                                filewriter.writerow(packet)
                     else:
                         ack = False
                         print('Checksum failed')
