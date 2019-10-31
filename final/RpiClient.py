@@ -190,7 +190,6 @@ class StoreData(threading.Thread):
 
 class ClientComms():
         def __init__(self, powerList):
-            threading.Thread.__init__(self)
             self.SECRET_KEY = 'panickerpanicker'
             self.HOST = sys.argv[1]
             self.PORT = int(sys.argv[2])
