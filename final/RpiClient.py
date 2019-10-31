@@ -278,7 +278,7 @@ class Raspberry():
 
                     # Start threads
                     for thread in self.threads:
-                        # thread.daemon = True # Runs in background
+                        thread.daemon = True
                         thread.start()
 
                     # Prevents KeyboardInterrupt being ignored
