@@ -9,11 +9,13 @@ class CircularBuffer():
         def put(self, packet):
             result = [x.rstrip('\x00') for x in packet.split(',')]
             packetID = packet.split(',', 1)[0];
+            print("nextID: " + str(self.nextID) + " packetID: " + str(packetID) + " result: " + result[0]);
             if self.nextID == packetID:
                 if self.ackID == (self.nextID + 1) % self.size:
                     self.full = True
                 else:
                     packet = packet.split("\n", 1)[0] # Remove garbage chars after newline
+                    print(packet)
                     self.buffer[self.nextID] = packet
                     self.nextID = (self.nextID + 1) % self.size
 
