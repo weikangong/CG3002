@@ -13,7 +13,7 @@ class CircularBuffer():
                 if self.ackID == (self.nextID + 1) % self.size:
                     self.full = True
                 else:
-                    packet = packet.rsplit("\n", 1)[0].rstrip('\x00') # Remove garbage chars after newline
+                    packet = packet.split("\n", 1)[0] # Remove garbage chars after newline
                     self.buffer[self.nextID] = packet
                     self.nextID = (self.nextID + 1) % self.size
 
