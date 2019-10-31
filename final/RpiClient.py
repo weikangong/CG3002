@@ -225,6 +225,7 @@ class ClientComms(threading.Thread):
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             time.sleep(3)
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             print("Connected to server " + self.HOST + ", port: " + str(self.PORT))
 
