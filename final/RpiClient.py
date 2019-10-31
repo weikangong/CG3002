@@ -216,8 +216,6 @@ class ClientComms(threading.Thread):
             self.powerList = powerList
 
             self.connectToServer()
-            time.sleep(3)
-            self.connectToServer()
 
         def run(self):
             pass
@@ -225,6 +223,8 @@ class ClientComms(threading.Thread):
         def connectToServer(self):
             print("Attempting to connect to server")
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s.connect((self.HOST, self.PORT))
+            time.sleep(3)
             self.s.connect((self.HOST, self.PORT))
             print("Connected to server " + self.HOST + ", port: " + str(self.PORT))
 
