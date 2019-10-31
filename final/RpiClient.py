@@ -216,15 +216,17 @@ class ClientComms(threading.Thread):
             self.powerList = powerList
 
             self.connectToServer()
+            time.sleep(3)
+            self.connectToServer()
 
         def run(self):
             pass
 
         def connectToServer(self):
-                print("Attempting to connect to server")
-                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.s.connect((self.HOST, self.PORT))
-                print("Connected to server " + self.HOST + ", port: " + str(self.PORT))
+            print("Attempting to connect to server")
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s.connect((self.HOST, self.PORT))
+            print("Connected to server " + self.HOST + ", port: " + str(self.PORT))
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
