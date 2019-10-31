@@ -207,56 +207,39 @@ class storeData(threading.Thread):
                 threading.Timer(0.06, self.storeData).start()
 
 
-class clientComms(threading.Thread):
+class ClientComms(threading.Thread):
         def __init__(self, powerList):
-                threading.Thread.__init__(self)
-                self.socket = []
-                self.SECRET_KEY = "panickerpanicker"
-                self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulders', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
-                self.powerList = powerList
-                self.moveIndex = 0
+            threading.Thread.__init__(self)
+            self.socket = []
+            self.SECRET_KEY = "panickerpanicker"
+            self.powerList = powerList
 
-                self.setUpComms()
-                self.connectToServer(self.socket[0], self.socket[1])
+            self.setUpComms()
+            self.connectToServer(self.socket[0], self.socket[1])
 
-                time.sleep(3)
-                self.connectToServer(self.socket[0], self.socket[1])
+        def setUpComms(self):
+                self.socket.append(sys.argv[1]) # IP Address
+                self.socket.append(sys.argv[2]) # Port
 
-        def run(self):
-            pass
+        def connectToServer(self, host, port):
+                print("Attempting to connect to server")
+                self.HOST = host
+                self.PORT = int(port)
+                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.s.connect((self.HOST, self.PORT))
+                print("Connected to server "+self.HOST+", port: "+str(self.PORT))
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.SECRET_KEY, AES.MODE_CBC, iv)
             mutex.acquire()
-            message = ("#" + action+ "|"+str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()
+            message = ("#" + action + "|" + str(self.powerList[0]) + "|" + str(self.powerList[1]) + "|" + str(self.powerList[2]) + "|" + str(self.powerList[3]) + "|").encode('utf8').strip()
             print("sent message: "+message)
             paddedMessage = self.padMessage(message, AES.block_size)
             encryptedMessage = cipher.encrypt(paddedMessage)
             encodedMessage = base64.b64encode(iv + encryptedMessage)
-            time.sleep(3)
-
-            #writing csv file, can delete
-            #with open('/home/pi/Desktop/data.csv', 'a') as csvfile:
-             #                           filewriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE)
-              #                          filewriter.writerow(action)
-
-
             self.sendMessage(encodedMessage)
             mutex.release() #change this to be input
-
-
-        def setUpComms(self):
-                self.socket.append(sys.argv[1])
-                self.socket.append(sys.argv[2])
-
-        def connectToServer(self, host, port):
-                print("attempting to connect to server")
-                self.HOST = host #"192.168.43.203"
-                self.PORT = int(port) #8080
-                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.s.connect((self.HOST, self.PORT))
-                print("connected to server "+self.HOST+", port: "+str(self.PORT))
 
         def padMessage(self, payload, block_size, style = 'pkcs7'):
             padding_len = block_size - len(payload) % block_size
@@ -273,24 +256,30 @@ class clientComms(threading.Thread):
 
         def sendMessage(self, text):
                 try:
-                        self.s.send(text)
+                    self.s.send(text)
                 except any:
-                        print()
+                    print()
 
 class Raspberry():
         def __init__(self):
             self.threads = []
             self.buffer = CircularBuffer.CircularBuffer(30)
             self.machine_learning_data_set = []
+            self.powerList = [0, 0, 0, 0]
 
         def main(self):
+                if len(sys.argv) != 4:
+                    print('Invalid number of arguments')
+                    print('python RpiClient.py [IP address] [Port] [csv <True, False>]')
+                    sys.exit()
+
                 try:
-                    # Set up port connection
-                    self.port=serial.Serial("/dev/serial0", baudrate=115200)
+                    # Initalize UART Port
+                    self.port = serial.Serial("/dev/serial0", baudrate=115200)
                     self.port.reset_input_buffer()
                     self.port.reset_output_buffer()
 
-                    # Handshaking
+                    # Handshaking Protocol
                     while(self.port.in_waiting == 0 or self.port.read() != 'A'):
                         print ('Try to connect to Arduino')
                         self.port.write('S')
@@ -298,15 +287,13 @@ class Raspberry():
                     self.port.write('A');
                     print ('Connected')
 
-                    powerList = [0,0,0,0]
+                    # Client to Server Connection
+                    client = ClientComms(self.powerList)
 
                     receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
                     self.threads.append(receiveDataThread)
 
-                    client = clientComms(powerList)
-                    self.threads.append(client)
-
-                    storeDataThread = storeData(self.buffer, self.port, powerList, client, self.machine_learning_data_set)
+                    storeDataThread = storeData(self.buffer, self.port, self.powerList, client, self.machine_learning_data_set)
                     self.threads.append(storeDataThread)
 
                     MachineLearningThread = MachineLearning(5, client, self.machine_learning_data_set, 30)
