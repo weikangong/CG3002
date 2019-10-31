@@ -24,14 +24,8 @@ from sklearn import preprocessing
 from RF import test_RF
 from RF import train_RF
 
-#global variables
+# Global variables
 mutex = threading.Lock()
-
-voltage = 0
-current = 0
-power = 0
-cum_power = 0
-
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -44,8 +38,8 @@ class ReceiveData(threading.Thread):
         def run(self):
                 self.readData()
 
-         # Read data from arduino
-         # Packet format: Packet ID, x1, y1, z1, x2, y2, z2, x3, y3, z3,
+         # Read data from Arduino
+         # Packet format: Packet ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4,
          # voltage, current, power, cumpower, checksum
         def readData(self):
                 nextTime = time.time() + self.period
@@ -57,10 +51,10 @@ class ReceiveData(threading.Thread):
                 threading.Timer(nextTime - time.time(), self.readData).start()
 
 class MachineLearning(threading.Thread):
-        def __init__(self, period, client, machine_learning_data_set, N):
+        def __init__(self, client, datasetList, period, N):
                 threading.Thread.__init__(self)
                 self.period = period
-                self.machine_learning_data_set = machine_learning_data_set
+                self.datasetList = datasetList
                 self.client = client
                 self.rf = train_RF()
                 self.N = N
@@ -70,11 +64,11 @@ class MachineLearning(threading.Thread):
 
         def run_machine_learning(self):
                 nextTime = time.time() + self.period
-                #print(str(self.machine_learning_data_set))
-                if len(self.machine_learning_data_set) >= 180:
-                        #print(len(self.machine_learning_data_set))
-                        #print(str(self.machine_learning_data_set))
-                        dataset = pd.DataFrame(self.machine_learning_data_set)
+                #print(str(self.datasetList))
+                if len(self.datasetList) >= 180:
+                        #print(len(self.datasetList))
+                        #print(str(self.datasetList))
+                        dataset = pd.DataFrame(self.datasetList)
                         dataset = dataset.reset_index()
                         #print(dataset.head())
                         dataset = dataset.iloc[40:-10, 1:14]
@@ -128,19 +122,18 @@ class MachineLearning(threading.Thread):
                         else:
                                 print("result = idle. not sending message")
                         #mutex.acquire()
-                        self.machine_learning_data_set[:] = []
+                        self.datasetList[:] = []
                         #mutex.release()
-                threading.Timer(6 , self.run_machine_learning).start()
+                threading.Timer(6, self.run_machine_learning).start()
 
 class StoreData(threading.Thread):
-        def __init__(self, buffer, port, powerList, client, machine_learning_data_set):
+        def __init__(self, buffer, port, client, datasetList, powerList):
                 threading.Thread.__init__(self)
+                self.client = client
                 self.buffer = buffer
                 self.port = port
                 self.powerList = powerList
-                self.actions = ['idle', 'handmotor', 'bunny', 'tapshoulder', 'rocket', 'cowboy', 'hunchback', 'jamesbond','chicken', 'movingsalute', 'whip', 'logout']
-                self.machine_learning_data_set = machine_learning_data_set
-                self.client = client
+                self.datasetList = datasetList
 
         def run(self):
                 self.storeData()
@@ -181,7 +174,7 @@ class StoreData(threading.Thread):
                                         filewriter.writerow(data)
 
                                     #storing into array
-                                    self.machine_learning_data_set.append(data)
+                                    self.datasetList.append(data)
                                     #mutex.release()
 
 
@@ -260,7 +253,7 @@ class Raspberry():
             self.threads = []
             self.buffer = CircularBuffer.CircularBuffer(30)
             self.client = []
-            self.machine_learning_data_set = []
+            self.datasetList = []
             self.powerList = [0, 0, 0, 0]
 
         def main(self):
@@ -271,7 +264,7 @@ class Raspberry():
 
                 try:
                     # Initalize UART Port
-                    self.port = serial.Serial("/dev/serial0", baudrate=115200)
+                    self.port = serial.Serial("/dev/serial0", baudrate = 115200)
                     self.port.reset_input_buffer()
                     self.port.reset_output_buffer()
 
@@ -286,14 +279,16 @@ class Raspberry():
                     # Client to Server Connection
                     self.client = ClientComms(self.powerList)
 
-                    # Input: buffer, port, interval, packet size
+                    # Input: buffer, port, period, packet size
                     receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
                     self.threads.append(receiveDataThread)
 
-                    storeDataThread = StoreData(self.buffer, self.port, self.powerList, self.client, self.machine_learning_data_set)
+                    # Input: buffer, port, client, datasetList, powerList
+                    storeDataThread = StoreData(self.buffer, self.port, self.client, self.datasetList, self.powerList)
                     self.threads.append(storeDataThread)
 
-                    MachineLearningThread = MachineLearning(5, self.client, self.machine_learning_data_set, 30)
+                    # Input: client, datasetList, period, dataset group size
+                    MachineLearningThread = MachineLearning(self.client, self.datasetList, 5, 30)
                     self.threads.append(MachineLearningThread)
 
                     # Start threads
