@@ -210,24 +210,21 @@ class storeData(threading.Thread):
 class ClientComms(threading.Thread):
         def __init__(self, powerList):
             threading.Thread.__init__(self)
-            self.socket = []
+            self.HOST = sys.argv[1]
+            self.PORT = int(sys.argv[2])
             self.SECRET_KEY = "panickerpanicker"
             self.powerList = powerList
 
-            self.setUpComms()
-            self.connectToServer(self.socket[0], self.socket[1])
+            self.connectToServer()
 
-        def setUpComms(self):
-                self.socket.append(sys.argv[1]) # IP Address
-                self.socket.append(sys.argv[2]) # Port
+        def run(self):
+            pass
 
-        def connectToServer(self, host, port):
+        def connectToServer(self):
                 print("Attempting to connect to server")
-                self.HOST = host
-                self.PORT = int(port)
                 self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.s.connect((self.HOST, self.PORT))
-                print("Connected to server "+self.HOST+", port: "+str(self.PORT))
+                print("Connected to server " + self.HOST + ", port: " + str(self.PORT))
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
