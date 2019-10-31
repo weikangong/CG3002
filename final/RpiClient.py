@@ -145,9 +145,9 @@ class StoreData(threading.Thread):
 
             if bufferList:
                 for packet in bufferList:
-                    print(str(packet))
+                    # print(str(packet))
                     checksum = packet.rsplit(",", 1)[1]
-                    print(checksum)
+                    # print(checksum)
                     packet = packet.rsplit(",", 1)[0]
                     testsum = reduce(operator.xor, [ord(c) for c in packet])
                     ack = False
