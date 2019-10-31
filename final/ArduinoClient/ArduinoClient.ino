@@ -8,7 +8,7 @@
 
 // Packet definitons
 // Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, cumpower, checksum
-// Packet max length: 2 (ID) + 8 (char per data point) * 16 (data point) + 3 (checksum) + 17 (delimiter) >= 150
+// Packet max length: 2 (ID) + 8 (char per data point) * 16 (data point) + 3 (checksum) + 17 (delimiter) = 150
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
 const int MAX_POWER_POINTS = 4;         // 4 different power parameters
 const int MAX_PACKET_SIZE = 150;
@@ -25,8 +25,8 @@ const int CURR_PIN = A15;
 const int VOLT_PIN = A1;
 const float RS = 0.1;                   // Shunt resistor value (in ohms)
 const int RL = 10000;                   // RL of the INA169 (in ohms)
-const int R1 = 20;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
-const int R2 = 20;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
+const int R1 = 425;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
+const int R2 = 385;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
 
 float voltage_divide = ((float) R1 + R2) / (float) R2;  // Measured voltage is R2/(R1+R2) times actual V
 float current = 0.0;                    // Calculated current value
@@ -53,6 +53,8 @@ float rotX2, rotY2, rotZ2;          // Gyroscope processed variables
 float sensorData[MAX_DATA_POINTS]; // Acc1, Acc2, Acc3, gyro1
 float powerData[MAX_POWER_POINTS]; // Voltage, current, power, cumpower
 
+void(* resetFunc) (void) = 0; // Resets Arduino programmatically
+
 /////////////////////////////////
 /////      HARDWARE        //////
 /////////////////////////////////
@@ -69,7 +71,7 @@ void setup() {
     digitalWrite(i, LOW);
   }
 
-  // Force unused analog pins to 0V to conserve power
+  // Force unused analog pins to 0V to converse power
   pinMode(A2, OUTPUT);
   pinMode(A3, OUTPUT);
   pinMode(A4, OUTPUT);
@@ -186,9 +188,13 @@ void handshake() {
       Serial1.write('A');
       Serial.println("Ack Handshake"); 
       break;
-    } else if (Serial.available() && Serial.read() == 'S') { // Test
+    } else if (Serial1.available() && Serial1.read() == 'R') {
+      resetFunc(); // Resets Arduino
+    } else if (Serial.available() && Serial.read() == 'S') { // Test Ack Handshake
       Serial.println("Ack Handshake");
       break;
+    } else if (Serial.available() && Serial.read() == 'R') { // Test Reset
+      resetFunc(); // Resets Arduino
     }
   }
 
@@ -197,9 +203,13 @@ void handshake() {
       Serial.println("Handshake complete");
       delay(500);
       break;
-    } else if (Serial.available() && Serial.read() == 'A') { // Test
+    } else if (Serial1.available() && Serial1.read() == 'R') {
+      resetFunc(); // Resets Arduino
+    } else if (Serial.available() && Serial.read() == 'A') { // Test Ack Handshake
       Serial.println("Handshake complete");
       break;
+    } else if (Serial.available() && Serial.read() == 'R') { // Test Reset
+      resetFunc(); // Resets Arduino
     }
   }
 }
@@ -287,6 +297,8 @@ void getResponse() {
     int packetID = Serial1.read();
     ackID = packetID;
     sendID = packetID; // Resend previous frame 
+  } else if (Serial1.available() && val == 'R') {
+    resetFunc(); // Resets Arduino
   }
 }
 

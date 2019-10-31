@@ -64,7 +64,7 @@ class MachineLearning(threading.Thread):
                 self.client = client
                 self.rf = train_RF()
                 self.N = N
-        
+
         def run(self):
                 self.run_machine_learning()
 
@@ -78,15 +78,15 @@ class MachineLearning(threading.Thread):
                         dataset = dataset.reset_index()
                         #print(dataset.head())
                         dataset = dataset.iloc[40:-10, 1:14]
-                        
+
                         #print(dataset.head())
                         dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
                         dataset = dataset.astype('float32')
                         dataset = dataset.drop(columns=['index'])
-                        
+
                         #print("dataset: ")
                         #print(dataset)
-                        
+
                         df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
                         df_mean1.rename(
                             columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
@@ -104,14 +104,14 @@ class MachineLearning(threading.Thread):
 
                         df1 = df_mean1.join(df_max1)
                         df1 = df1.join(df_var1)
-                        
+
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
-                        
+
                         df = preprocessing.normalize(df1)
-                        
+
                         result = test_RF(self.rf, df)
-                        
+
                         #print(str(len(dataset[0])))
                         #print("ml")
                         #model = joblib.load("/home/pi/Desktop/cg3002/comms/RF.pkl")
@@ -121,8 +121,8 @@ class MachineLearning(threading.Thread):
                         predicted_action = result
 
                         #once machine learning code is done, this function will send data
-                        
-                        if result[0] != "idle" : 
+
+                        if result[0] != "idle" :
                                 print(result[0])
                                 self.client.prepareAndSendMessage(result[0])
                         else:
@@ -216,15 +216,11 @@ class clientComms(threading.Thread):
                 self.powerList = powerList
                 self.moveIndex = 0
 
-                try:
-                        self.setUpComms()
-                        self.connectToServer(self.socket[0], self.socket[1])
+                self.setUpComms()
+                self.connectToServer(self.socket[0], self.socket[1])
 
-                        time.sleep(3)
-                        self.connectToServer(self.socket[0], self.socket[1])
-
-                except KeyboardInterrupt:
-                        sys.exit(1)
+                time.sleep(3)
+                self.connectToServer(self.socket[0], self.socket[1])
 
         def run(self):
             pass
@@ -271,7 +267,7 @@ class clientComms(threading.Thread):
             elif style == 'iso786':
                 padding = bchr(128) + bchr(0) * (padding_len - 1)
             else:
-                raise ValueError("Unknown Padding STyle")
+                raise ValueError("Unknown Padding Style")
 
             return payload + padding
 
@@ -286,47 +282,45 @@ class Raspberry():
                 self.threads = []
                 self.buffer = CircularBuffer.CircularBuffer(30)
                 self.machine_learning_data_set = []
-                self.curr_move = "nothing"
 
         def main(self):
-                # Set up port connection
-                self.port=serial.Serial("/dev/serial0", baudrate=115200)
-                self.port.reset_input_buffer()
-                self.port.reset_output_buffer()
+                try:
+                        # Set up port connection
+                        self.port=serial.Serial("/dev/serial0", baudrate=115200)
+                        self.port.reset_input_buffer()
+                        self.port.reset_output_buffer()
 
-                # Handshaking
-                while(self.port.in_waiting == 0 or self.port.read() != 'A'):
-                    print ('Try to connect to Arduino')
-                    self.port.write('S')
-                    time.sleep(1)
-                self.port.write('A');
-                print ('Connected')
+                        # Handshaking
+                        while(self.port.in_waiting == 0 or self.port.read() != 'A'):
+                            print ('Try to connect to Arduino')
+                            self.port.write('S')
+                            time.sleep(1)
+                        self.port.write('A');
+                        print ('Connected')
 
-                powerList = [0,0,0,0]
+                        powerList = [0,0,0,0]
 
-                #receive data thread
-                receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
-                self.threads.append(receiveDataThread)
+                        receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
+                        self.threads.append(receiveDataThread)
 
-                #comms thread
-                client = clientComms(powerList)
-                self.threads.append(client)
+                        client = clientComms(powerList)
+                        self.threads.append(client)
 
-                #store data thread
-                storeDataThread = storeData(self.buffer, self.port, powerList, client, self.machine_learning_data_set)
-                self.threads.append(storeDataThread)
+                        storeDataThread = storeData(self.buffer, self.port, powerList, client, self.machine_learning_data_set)
+                        self.threads.append(storeDataThread)
 
-                # Machine learning thread
-                MachineLearningThread = MachineLearning(5, client, self.machine_learning_data_set, 30)
-                self.threads.append(MachineLearningThread)
+                        MachineLearningThread = MachineLearning(5, client, self.machine_learning_data_set, 30)
+                        self.threads.append(MachineLearningThread)
 
-                # Start threads
-                for thread in self.threads:
-                    # thread.daemon = True # Runs in background
-                    thread.start()
+                        # Start threads
+                        for thread in self.threads:
+                            # thread.daemon = True # Runs in background
+                            thread.start()
+
+                except KeyboardInterrupt:
+                        self.port.write('A'); # Resets the Arduino
+                        sys.exit(1)
 
 if __name__ == '__main__':
         pi = Raspberry()
         pi.main()
-        # client = clientComms()
-        # client.main()
