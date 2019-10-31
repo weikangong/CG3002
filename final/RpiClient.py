@@ -26,6 +26,77 @@ from RF import train_RF
 
 # Global variables
 mutex = threading.Lock()
+packetSize = 150
+sampleSize = 30
+receiveDataPeriod = 0.03
+storeDataPeriod = 0.06
+machineLearningPeriod = 6
+
+class MachineLearning(threading.Thread):
+        def __init__(self, client, datasetList, period, N):
+                threading.Thread.__init__(self)
+                self.client = client
+                self.datasetList = datasetList
+                self.period = period
+                self.N = N
+                self.rf = train_RF()
+
+        def run(self):
+                self.runMachineLearning()
+
+        def runMachineLearning(self):
+                nextTime = time.time() + self.period
+                if len(self.datasetList) >= 180:
+                        mutex.acquire()
+                        dataset = pd.DataFrame(self.datasetList)
+                        mutex.release()
+                        dataset = dataset.reset_index()
+                        dataset = dataset.iloc[40:-10, 1:14]
+
+                        #print(dataset.head())
+                        dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
+                        dataset = dataset.astype('float32')
+                        dataset = dataset.drop(columns=['index'])
+
+                        df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
+                        df_mean1.rename(
+                            columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
+                                     'z2': 'z2_mean', 'x3': 'x3_mean', 'y3': 'y3_mean', 'z3': 'z3_mean', 'x4': 'x4_mean', 'y4': 'y4_mean', 'z4': 'z4_mean'}, inplace=True)
+
+                        df_max1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).max()
+                        df_max1.rename(columns={'x1': 'x1_max', 'y1': 'y1_max', 'z1': 'z1_max', 'x2': 'x2_max', 'y2': 'y2_max',
+                                                'z2': 'z2_max',
+                                                'x3': 'x3_max', 'y3': 'y3_max', 'z3': 'z3_max', 'x4': 'x4_max', 'y4': 'y4_max', 'z4': 'z4_max'}, inplace=True)
+
+                        df_var1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).var()
+                        df_var1.rename(columns={'x1': 'x1_var', 'y1': 'y1_var', 'z1': 'z1_var', 'x2': 'x2_var', 'y2': 'y2_var',
+                                                'z2': 'z2_var',
+                                                'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var', 'x4': 'x4_var', 'y4': 'y4_var', 'z4': 'z4_var'}, inplace=True)
+
+                        df1 = df_mean1.join(df_max1)
+                        df1 = df1.join(df_var1)
+                        df1 = df1.astype('float32')
+                        df1 = df1.dropna()
+                        df = preprocessing.normalize(df1)
+                        result = test_RF(self.rf, df)
+
+                        #print(str(len(dataset[0])))
+                        #print("ml")
+                        #model = joblib.load("/home/pi/Desktop/cg3002/comms/RF.pkl")
+
+                        #result = stats.mode(model.predict(df1))
+
+                        predicted_action = result
+
+                        #once machine learning code is done, this function will send data
+
+                        if result[0] != "idle" :
+                            print(result[0])
+                            self.client.prepareAndSendMessage(result[0])
+                        else:
+                            print("result = idle. not sending message")
+                        self.datasetList[:] = []
+                threading.Timer(self.period, self.runMachineLearning).start()
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -50,90 +121,15 @@ class ReceiveData(threading.Thread):
                 mutex.release()
             threading.Timer(nextTime - time.time(), self.receiveData).start()
 
-class MachineLearning(threading.Thread):
-        def __init__(self, client, datasetList, period, N):
-                threading.Thread.__init__(self)
-                self.period = period
-                self.datasetList = datasetList
-                self.client = client
-                self.rf = train_RF()
-                self.N = N
-
-        def run(self):
-                self.run_machine_learning()
-
-        def run_machine_learning(self):
-                nextTime = time.time() + self.period
-                #print(str(self.datasetList))
-                if len(self.datasetList) >= 180:
-                        #print(len(self.datasetList))
-                        #print(str(self.datasetList))
-                        dataset = pd.DataFrame(self.datasetList)
-                        dataset = dataset.reset_index()
-                        #print(dataset.head())
-                        dataset = dataset.iloc[40:-10, 1:14]
-
-                        #print(dataset.head())
-                        dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
-                        dataset = dataset.astype('float32')
-                        dataset = dataset.drop(columns=['index'])
-
-                        #print("dataset: ")
-                        #print(dataset)
-
-                        df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
-                        df_mean1.rename(
-                            columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
-                                     'z2': 'z2_mean', 'x3': 'x3_mean', 'y3': 'y3_mean', 'z3': 'z3_mean', 'x4': 'x4_mean', 'y4': 'y4_mean', 'z4': 'z4_mean'}, inplace=True)
-
-                        df_max1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).max()
-                        df_max1.rename(columns={'x1': 'x1_max', 'y1': 'y1_max', 'z1': 'z1_max', 'x2': 'x2_max', 'y2': 'y2_max',
-                                                'z2': 'z2_max',
-                                                'x3': 'x3_max', 'y3': 'y3_max', 'z3': 'z3_max', 'x4': 'x4_max', 'y4': 'y4_max', 'z4': 'z4_max'}, inplace=True)
-
-                        df_var1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).var()
-                        df_var1.rename(columns={'x1': 'x1_var', 'y1': 'y1_var', 'z1': 'z1_var', 'x2': 'x2_var', 'y2': 'y2_var',
-                                                'z2': 'z2_var',
-                                                'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var', 'x4': 'x4_var', 'y4': 'y4_var', 'z4': 'z4_var'}, inplace=True)
-
-                        df1 = df_mean1.join(df_max1)
-                        df1 = df1.join(df_var1)
-
-                        df1 = df1.astype('float32')
-                        df1 = df1.dropna()
-
-                        df = preprocessing.normalize(df1)
-
-                        result = test_RF(self.rf, df)
-
-                        #print(str(len(dataset[0])))
-                        #print("ml")
-                        #model = joblib.load("/home/pi/Desktop/cg3002/comms/RF.pkl")
-
-                        #result = stats.mode(model.predict(df1))
-
-                        predicted_action = result
-
-                        #once machine learning code is done, this function will send data
-
-                        if result[0] != "idle" :
-                                print(result[0])
-                                self.client.prepareAndSendMessage(result[0])
-                        else:
-                                print("result = idle. not sending message")
-                        #mutex.acquire()
-                        self.datasetList[:] = []
-                        #mutex.release()
-                threading.Timer(6, self.run_machine_learning).start()
-
 class StoreData(threading.Thread):
-        def __init__(self, buffer, port, client, datasetList, powerList):
+        def __init__(self, buffer, port, client, datasetList, powerList, period):
             threading.Thread.__init__(self)
-            self.client = client
             self.buffer = buffer
             self.port = port
-            self.powerList = powerList
+            self.client = client
             self.datasetList = datasetList
+            self.powerList = powerList
+            self.period = period
             self.nextID = 0
             self.printCSV = sys.argv[3].lower() == 'true'
 
@@ -162,7 +158,9 @@ class StoreData(threading.Thread):
                         self.powerList[3] = packet[16]
 
                         self.nextID = (int(packet[0]) + 1) % self.buffer.getSize()
+                        mutex.acquire()
                         self.datasetList.append(packet)
+                        mutex.release()
 
                         if self.printCSV:
                             with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
@@ -186,7 +184,7 @@ class StoreData(threading.Thread):
                     self.buffer.nack(self.nextID)
                     mutex.release()
 
-            threading.Timer(0.06, self.storeData).start()
+            threading.Timer(self.period, self.storeData).start()
 
 
 class ClientComms(threading.Thread):
@@ -253,7 +251,7 @@ class Raspberry():
 
                 try:
                     # Initalize UART Port
-                    self.port = serial.Serial("/dev/serial0", baudrate = 115200)
+                    self.port = serial.Serial('/dev/serial0', baudrate = 115200)
                     self.port.reset_input_buffer()
                     self.port.reset_output_buffer()
 
@@ -268,16 +266,13 @@ class Raspberry():
                     # Client to Server Connection
                     self.client = ClientComms(self.powerList)
 
-                    # Input: buffer, port, period, packet size
-                    receiveDataThread = ReceiveData(self.buffer, self.port, 0.03, 150)
+                    receiveDataThread = ReceiveData(self.buffer, self.port, receiveDataPeriod, packetSize)
                     self.threads.append(receiveDataThread)
 
-                    # Input: buffer, port, client, datasetList, powerList
-                    storeDataThread = StoreData(self.buffer, self.port, self.client, self.datasetList, self.powerList)
+                    storeDataThread = StoreData(self.buffer, self.port, self.client, self.datasetList, self.powerList, storeDataPeriod)
                     self.threads.append(storeDataThread)
 
-                    # Input: client, datasetList, period, dataset group size
-                    MachineLearningThread = MachineLearning(self.client, self.datasetList, 5, 30)
+                    MachineLearningThread = MachineLearning(self.client, self.datasetList, machineLearningPeriod, sampleSize)
                     self.threads.append(MachineLearningThread)
 
                     # Start threads
