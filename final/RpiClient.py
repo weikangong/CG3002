@@ -318,7 +318,7 @@ class Raspberry():
                             thread.start()
 
                 except KeyboardInterrupt:
-                        self.port.write('A'); # Resets the Arduino
+                        self.port.write('R'); # Resets the Arduino
                         sys.exit(1)
 
 if __name__ == '__main__':
