@@ -37,6 +37,8 @@ float cumpower = 0.0;                   // Calculated energy (E = Pt)
 unsigned long timeLastTaken = 0;        // The last time readings were calculated (in number of ms elapsed since startup)
 unsigned long tempTime = 0;             // To use as "current time" in two lines
 
+const int RESET_PIN = 4;
+  
 // Sensor definitions
 MPU6050 accelgyro; // class default I2C address is 0x68
 MPU6050 accelgyro2(0x69);
@@ -54,19 +56,21 @@ float rotX2, rotY2, rotZ2;          // Gyroscope processed variables
 float sensorData[MAX_DATA_POINTS]; // Acc1, Acc2, Acc3, gyro1
 float powerData[MAX_POWER_POINTS]; // Voltage, current, power, cumpower
 
-void(* resetFunc) (void) = 0; // Resets Arduino programmatically
-
 /////////////////////////////////
 /////      HARDWARE        //////
 /////////////////////////////////
 void setup() {
+  // Digital pins for reset
+  digitalWrite(RESET_PIN, HIGH);
+  pinMode(RESET_PIN, OUTPUT);
+
   // Digital pins for power
   pinMode(CURR_PIN, INPUT);
   pinMode(VOLT_PIN, INPUT);
-
-   //Force unused digital pins to 0V to conserve power
+    
+   // Force unused digital pins to 0V to conserve power
   for (int i = 0; i <= 53; i++) {
-    if (i == 10 || i == 12 || i == 13 || i == 17 || i == 18 || i ==  19 || i == 20 || i == 21)
+    if (i == 4 || i == 10 || i == 12 || i == 13 || i == 17 || i == 18 || i ==  19 || i == 20 || i == 21)
       continue;
     pinMode(i, OUTPUT);
     digitalWrite(i, LOW);
@@ -292,8 +296,8 @@ void getResponse() {
     ackID = packetID;
     sendID = packetID; // Resend previous frame 
   } else if (val == 'R') { // Do not need to check Serial1.available() as RpiClient has closed it
-    Serial.print("Resetting");
-    resetFunc(); // Resets Arduino
+    Serial.println("Resetting");
+    digitalWrite(RESET_PIN, LOW); // Resets Arduino
   }
 }
 
