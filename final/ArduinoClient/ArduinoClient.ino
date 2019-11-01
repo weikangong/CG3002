@@ -8,7 +8,8 @@
 
 // Packet definitons
 // Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, cumpower, checksum
-// Packet max length: 2 (ID) + 8 (char per data point) * 16 (data point) + 3 (checksum) + 17 (delimiter) >= 150
+// Packet max length: 2 (ID) + 8 (char per sensor data) * 12 (12 sensor data) + 5 (char per power data) * 4 (4 power data)
+// + 3 (checksum) + 19 (delimiter) = 140 bytes
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
 const int MAX_POWER_POINTS = 4;         // 4 different power parameters
 const int MAX_PACKET_SIZE = 150;
@@ -36,6 +37,8 @@ float cumpower = 0.0;                   // Calculated energy (E = Pt)
 unsigned long timeLastTaken = 0;        // The last time readings were calculated (in number of ms elapsed since startup)
 unsigned long tempTime = 0;             // To use as "current time" in two lines
 
+const int RESET_PIN = 4;
+  
 // Sensor definitions
 MPU6050 accelgyro; // class default I2C address is 0x68
 MPU6050 accelgyro2(0x69);
@@ -57,19 +60,23 @@ float powerData[MAX_POWER_POINTS]; // Voltage, current, power, cumpower
 /////      HARDWARE        //////
 /////////////////////////////////
 void setup() {
+  // Digital pins for reset
+  digitalWrite(RESET_PIN, HIGH);
+  pinMode(RESET_PIN, OUTPUT);
+
   // Digital pins for power
   pinMode(CURR_PIN, INPUT);
   pinMode(VOLT_PIN, INPUT);
-
-   //Force unused digital pins to 0V to conserve power
+    
+   // Force unused digital pins to 0V to conserve power
   for (int i = 0; i <= 53; i++) {
-    if (i == 10 || i == 12 || i == 13 || i == 17 || i == 18 || i ==  19 || i == 20 || i == 21)
+    if (i == 4 || i == 10 || i == 12 || i == 13 || i == 17 || i == 18 || i ==  19 || i == 20 || i == 21)
       continue;
     pinMode(i, OUTPUT);
     digitalWrite(i, LOW);
   }
 
-  // Force unused analog pins to 0V to conserve power
+  // Force unused analog pins to 0V to converse power
   pinMode(A2, OUTPUT);
   pinMode(A3, OUTPUT);
   pinMode(A4, OUTPUT);
@@ -163,7 +170,7 @@ void getSensorValues() {
 
 void getPowerValues() {
   voltage = ((float) analogRead(VOLT_PIN) * 5.0) * voltage_divide / 1023.0;
-  
+  // IS = (Vout * 1kohm) / (RL * RS)
   float vout = (float) analogRead(CURR_PIN) * 5.0 / 1023.0;
   current = (vout * 1000) / (RL * RS);
   power = voltage * current;
@@ -186,7 +193,7 @@ void handshake() {
       Serial1.write('A');
       Serial.println("Ack Handshake"); 
       break;
-    } else if (Serial.available() && Serial.read() == 'S') { // Test
+    }else if (Serial.available() && Serial.read() == 'S') { // Test Ack Handshake
       Serial.println("Ack Handshake");
       break;
     }
@@ -197,7 +204,7 @@ void handshake() {
       Serial.println("Handshake complete");
       delay(500);
       break;
-    } else if (Serial.available() && Serial.read() == 'A') { // Test
+    } else if (Serial.available() && Serial.read() == 'A') { // Test Ack Handshake
       Serial.println("Handshake complete");
       break;
     }
@@ -252,6 +259,7 @@ void formatMessage() {
 
   strcat(tempStr, ",");
   strcat(tempStr, checksumChar);
+  strcat(tempStr, "\n");
 
   int startIndex = slotID * MAX_PACKET_SIZE;
   for (int i = startIndex; i < startIndex + MAX_PACKET_SIZE; i++) packetBuffer[i] = tempStr[i-startIndex];
@@ -287,6 +295,9 @@ void getResponse() {
     int packetID = Serial1.read();
     ackID = packetID;
     sendID = packetID; // Resend previous frame 
+  } else if (val == 'R') { // Do not need to check Serial1.available() as RpiClient has closed it
+    Serial.println("Resetting");
+    digitalWrite(RESET_PIN, LOW); // Resets Arduino
   }
 }
 
