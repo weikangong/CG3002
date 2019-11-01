@@ -8,6 +8,7 @@ import os
 
 import random
 
+import socket
 
 import sys
 
@@ -30,7 +31,6 @@ from server_auth import server_auth
 
 
 
-import socket
 
 class Server(threading.Thread):
 
@@ -40,27 +40,27 @@ class Server(threading.Thread):
 
         self.shutdown = threading.Event()
 
+
+
         # init server
+
         self.auth = server_auth()
 
         # Create a TCP/IP socket
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("socket created")
 
-        # Binding the socket to the port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # Bind the socket to the port
+
         server_address = (ip_addr, port_num)
+
         print('starting up on %s port %s' % server_address, file=sys.stderr)
-        try:
-            self.sock.bind(server_address)
-        except socket.error as msg:
-            print(msg)
-        print("Socket bind complete.")
+
+        self.sock.bind(server_address)
 
         # Listen for incoming connections
+
         self.sock.listen(1)
-        # connection, address = s.accept() #we define the connection and address as what the socket accepts
-        connection, address =self.sock.accept()
-        print("Connected to " + address[0] + ":" +str(address[1]))
 
         self.actions = ['handmotor', 'handmotor', 'handmotor', 'handmotor',
 
