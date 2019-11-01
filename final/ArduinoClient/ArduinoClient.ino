@@ -22,12 +22,12 @@ char packetBuffer[MAX_PACKET_SIZE * MAX_PACKET];
 char tempStr[MAX_PACKET_SIZE];
 
 // Sensors and Power definitions
-const int CURR_PIN = A15;
+const int CURR_PIN = A0;
 const int VOLT_PIN = A1;
 const float RS = 0.1;                   // Shunt resistor value (in ohms)
 const int RL = 10000;                   // RL of the INA169 (in ohms)
-const int R1 = 425;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
-const int R2 = 385;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
+const int R1 = 22;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
+const int R2 = 22;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
 
 float voltage_divide = ((float) R1 + R2) / (float) R2;  // Measured voltage is R2/(R1+R2) times actual V
 float current = 0.0;                    // Calculated current value
