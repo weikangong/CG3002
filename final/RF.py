@@ -83,7 +83,7 @@ def train_RF():
 
     return rf
 
-
+#no longer required, test can be done using pkl file
 def test_RF(rf, df1):
 
     result = stats.mode(rf.predict(df1))
