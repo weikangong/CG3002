@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from scipy import stats
 
 def train_RF():
-    filePath = "/home/pi/Desktop/cg3002/comms/training-data-complete-23oct.csv"
+    filePath = "/home/pi/Desktop/cg3002/software/training-data-complete-23+25oct-trimmed.csv"
     dataset = pd.read_csv(filePath)
     # dataset = dataset.dropna()
 
@@ -76,21 +76,18 @@ def train_RF():
     # from sklearn.externals import joblib
     #
     # joblib.dump(rf, "RF.pkl", protocol=2)
-    
+
     #result = stats.mode(rf.predict(df1))
-    
+
     #print(result)
-    
+
     return rf
 
 
 def test_RF(rf, df1):
-    
+
     result = stats.mode(rf.predict(df1))
-    
+
     print(rf.predict(df1))
-    
+
     return result[0]
-
-
-

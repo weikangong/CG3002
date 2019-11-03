@@ -31,27 +31,27 @@ X = preprocessing.normalize(X)
 
 
 #--------------------------------------------- Getting best params ---------------------------------------------------#
-
-k_range = list(range(1, 31))
-print(k_range)
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30)
-
-classifier = RandomForestClassifier()
-# classifier.fit(X_train, y_train)
-
-param_grid = { 
-    'n_estimators': [200, 500],
-    'max_features': ['auto', 'sqrt', 'log2'],
-    'max_depth' : [4,5,6,7,8],
-    'criterion' :['gini', 'entropy']
-}
-print(param_grid)
-
-grid = GridSearchCV(estimator=classifier, param_grid=param_grid, cv= 5)
-
-grid.fit(X,y)
-print(grid.best_estimator_)
+#
+# k_range = list(range(1, 31))
+# print(k_range)
+#
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30)
+#
+# classifier = RandomForestClassifier()
+# # classifier.fit(X_train, y_train)
+#
+# param_grid = {
+#     'n_estimators': [200, 500],
+#     'max_features': ['auto', 'sqrt', 'log2'],
+#     'max_depth' : [4,5,6,7,8],
+#     'criterion' :['gini', 'entropy']
+# }
+# print(param_grid)
+#
+# grid = GridSearchCV(estimator=classifier, param_grid=param_grid, cv= 5)
+#
+# grid.fit(X,y)
+# print(grid.best_estimator_)
 
 
 # In[4]:
@@ -84,7 +84,3 @@ joblib.dump(rf, "RF.pkl", protocol=2)
 
 
 # In[ ]:
-
-
-
-
