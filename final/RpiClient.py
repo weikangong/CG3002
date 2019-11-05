@@ -17,7 +17,7 @@ import base64
 import numpy as np
 import pandas as pd
 import math
-import joblib
+from sklearn.externals import joblib
 from scipy import stats
 from sklearn import preprocessing
 
@@ -31,7 +31,6 @@ sampleSize = 30
 receiveDataPeriod = 0.03
 storeDataPeriod = 0.06
 machineLearningPeriod = 5
-transitionPeriod = 0.5
 
 class MachineLearning(threading.Thread):
         def __init__(self, client, datasetList, period, N):
@@ -40,7 +39,7 @@ class MachineLearning(threading.Thread):
                 self.datasetList = datasetList
                 self.period = period
                 self.N = N
-                self.rf = train_RF()
+                #self.rf = train_RF()
 
         def run(self):
                 self.runMachineLearning()
@@ -87,27 +86,24 @@ class MachineLearning(threading.Thread):
                         # print("ml")
 
                         model = joblib.load("/home/pi/Desktop/cg3002/final/RF.pkl")
-                        result = stats.mode(model.predict(df1))
+                        result_arr = model.predict(df)
+                        result = stats.mode(model.predict(df))
 
                         # predicted_action = result
 
                         #once machine learning code is done, this function will send data
 
                         if result[0] != 'idle':
-                            print('Result = ' + result[0])
-                            self.client.prepareAndSendMessage(result[0])
+                            print('Result = ' + str(result_arr))
+                            self.client.prepareAndSendMessage(result[0][0])
                             
                             if result[0] == 'logout':
                                 self.client.stopConnection()
                             
                         else:
                             print('Result = idle, not sending message')
-                        # Clears datasetList after accounting for human reaction time and server response time
-                        threading.Timer(transitionPeriod, self.clearDatasetList);
+                        self.datasetList[:] = []
                 threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
-
-        def clearDatasetList(self):
-            self.datasetList[:] = []
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
