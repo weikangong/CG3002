@@ -31,6 +31,7 @@ sampleSize = 30
 receiveDataPeriod = 0.03
 storeDataPeriod = 0.06
 machineLearningPeriod = 5
+transitionPeriod = 0.5
 
 class MachineLearning(threading.Thread):
         def __init__(self, client, datasetList, period, N):
@@ -97,8 +98,12 @@ class MachineLearning(threading.Thread):
                             self.client.prepareAndSendMessage(result[0])
                         else:
                             print('Result = idle, not sending message')
-                        self.datasetList[:] = []
+                        # Clears datasetList after accounting for human reaction time and server response time
+                        threading.Timer(transitionPeriod, self.clearDatasetList);
                 threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
+
+        def clearDatasetList(self):
+            self.datasetList[:] = []
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
