@@ -77,7 +77,7 @@ class MachineLearning(threading.Thread):
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
                         df = preprocessing.normalize(df1)
-                        model = joblib.load("/home/pi/Desktop/cg3002/software/RF2.pkl")
+                        model = joblib.load("/home/pi/Desktop/cg3002/software/RF3.pkl")
                         result_arr = model.predict(df)
                         result = stats.mode(model.predict(df))
 
