@@ -96,6 +96,10 @@ class MachineLearning(threading.Thread):
                         if result[0] != 'idle':
                             print('Result = ' + result[0])
                             self.client.prepareAndSendMessage(result[0])
+                            
+                            if result[0] == 'logout':
+                                self.client.stopConnection()
+                            
                         else:
                             print('Result = idle, not sending message')
                         # Clears datasetList after accounting for human reaction time and server response time
@@ -208,6 +212,11 @@ class ClientComms():
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             print('Connected to server ' + self.HOST + ', port: ' + str(self.PORT))
+        
+        def stopConnection(self):
+            print("logging out")
+            self.s.shutdown(socket.SHUT_RDWR)
+            self.s.close()
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
