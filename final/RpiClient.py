@@ -85,8 +85,8 @@ class MachineLearning(threading.Thread):
                             print('Result = ' + str(result_arr))
                             self.client.prepareAndSendMessage(result[0][0])
 
-                            if result[0] == 'logout':
-                                self.client.stopConnection()
+                            # if result[0] == 'logout':
+                            #     self.client.stopConnection()
                         else:
                             print('Result = idle, not sending message')
                         self.datasetList[:] = []
