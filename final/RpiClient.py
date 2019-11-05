@@ -80,15 +80,16 @@ class MachineLearning(threading.Thread):
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
                         df = preprocessing.normalize(df1)
-                        result = test_RF(self.rf, df)
+
+                        # result = test_RF(self.rf, df) //training on the pi
 
                         #print(str(len(dataset[0])))
-                        #print("ml")
-                        #model = joblib.load("/home/pi/Desktop/cg3002/comms/RF.pkl")
+                        # print("ml")
 
-                        #result = stats.mode(model.predict(df1))
+                        model = joblib.load("/home/pi/Desktop/cg3002/final/RF.pkl")
+                        result = stats.mode(model.predict(df1))
 
-                        predicted_action = result
+                        # predicted_action = result
 
                         #once machine learning code is done, this function will send data
 
