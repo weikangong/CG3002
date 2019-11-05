@@ -30,7 +30,7 @@ packetSize = 150
 sampleSize = 30
 receiveDataPeriod = 0.03
 storeDataPeriod = 0.06
-machineLearningPeriod = 5
+machineLearningPeriod = 6
 
 class MachineLearning(threading.Thread):
         def __init__(self, client, datasetList, period, N):
@@ -46,7 +46,7 @@ class MachineLearning(threading.Thread):
         def runMachineLearning(self):
                 nextTime = time.time() + self.period
                 print('datasetList size: ' + str(len(self.datasetList)))
-                if len(self.datasetList) >= 120:
+                if len(self.datasetList) >= 150:
                         mutex.acquire()
                         dataset = pd.DataFrame(self.datasetList)
                         mutex.release()
