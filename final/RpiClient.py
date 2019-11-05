@@ -39,7 +39,6 @@ class MachineLearning(threading.Thread):
                 self.datasetList = datasetList
                 self.period = period
                 self.N = N
-                #self.rf = train_RF()
 
         def run(self):
                 self.runMachineLearning()
@@ -47,14 +46,13 @@ class MachineLearning(threading.Thread):
         def runMachineLearning(self):
                 nextTime = time.time() + self.period
                 print('datasetList size: ' + str(len(self.datasetList)))
-                if len(self.datasetList) >= 140:
+                if len(self.datasetList) >= 120:
                         mutex.acquire()
                         dataset = pd.DataFrame(self.datasetList)
                         mutex.release()
                         dataset = dataset.reset_index()
                         dataset = dataset.iloc[40:-10, 1:14]
 
-                        #print(dataset.head())
                         dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
                         dataset = dataset.astype('float32')
                         dataset = dataset.drop(columns=['index'])
@@ -79,27 +77,16 @@ class MachineLearning(threading.Thread):
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
                         df = preprocessing.normalize(df1)
-
-                        # result = test_RF(self.rf, df) //training on the pi
-
-                        #print(str(len(dataset[0])))
-                        # print("ml")
-
                         model = joblib.load("/home/pi/Desktop/cg3002/final/RF.pkl")
                         result_arr = model.predict(df)
                         result = stats.mode(model.predict(df))
 
-                        # predicted_action = result
-
-                        #once machine learning code is done, this function will send data
-
                         if result[0] != 'idle':
                             print('Result = ' + str(result_arr))
                             self.client.prepareAndSendMessage(result[0][0])
-                            
+
                             if result[0] == 'logout':
                                 self.client.stopConnection()
-                            
                         else:
                             print('Result = idle, not sending message')
                         self.datasetList[:] = []
@@ -208,7 +195,7 @@ class ClientComms():
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             print('Connected to server ' + self.HOST + ', port: ' + str(self.PORT))
-        
+
         def stopConnection(self):
             print("logging out")
             self.s.shutdown(socket.SHUT_RDWR)
