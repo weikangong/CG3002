@@ -104,7 +104,7 @@ class Server(threading.Thread):
 
         self.x = 0
 
-        self.timeout = 60
+        self.timeout = 15
 
         self.no_response = False
 
@@ -126,7 +126,7 @@ class Server(threading.Thread):
 
         self.timer.start()
 
-        print("No actions for 60 seconds to give time to connect")
+        print("No actions for 15 seconds to give time to connect")
 
 
 

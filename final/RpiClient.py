@@ -2,6 +2,7 @@ import serial
 import time
 import socket
 import sys
+import os
 import threading
 import time
 import CircularBuffer
@@ -17,7 +18,7 @@ import base64
 import numpy as np
 import pandas as pd
 import math
-import joblib
+from sklearn.externals import joblib
 from scipy import stats
 from sklearn import preprocessing
 
@@ -28,10 +29,9 @@ from RF import train_RF
 mutex = threading.Lock()
 packetSize = 150
 sampleSize = 30
-receiveDataPeriod = 0.03
-storeDataPeriod = 0.06
+receiveDataPeriod = 0.003
+storeDataPeriod = 0.03
 machineLearningPeriod = 5
-transitionPeriod = 0.5
 
 class MachineLearning(threading.Thread):
         def __init__(self, client, datasetList, period, N):
@@ -40,22 +40,20 @@ class MachineLearning(threading.Thread):
                 self.datasetList = datasetList
                 self.period = period
                 self.N = N
-                self.rf = train_RF()
 
         def run(self):
-                self.runMachineLearning()
+                threading.Timer(self.period, self.runMachineLearning).start()
 
         def runMachineLearning(self):
                 nextTime = time.time() + self.period
                 print('datasetList size: ' + str(len(self.datasetList)))
-                if len(self.datasetList) >= 140:
+                if len(self.datasetList) >= 150:
                         mutex.acquire()
                         dataset = pd.DataFrame(self.datasetList)
                         mutex.release()
                         dataset = dataset.reset_index()
-                        dataset = dataset.iloc[40:-10, 1:14]
+                        dataset = dataset.iloc[30:, 1:14]
 
-                        #print(dataset.head())
                         dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
                         dataset = dataset.astype('float32')
                         dataset = dataset.drop(columns=['index'])
@@ -80,34 +78,21 @@ class MachineLearning(threading.Thread):
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
                         df = preprocessing.normalize(df1)
+                        model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
+                        result_arr = model.predict(df)
+                        result = stats.mode(model.predict(df))
+                        print('Modes = ' + str(result_arr))
 
-                        # result = test_RF(self.rf, df) //training on the pi
+                        if result[0][0] != 'idle':
+                            print('Result = ' + str(result[0][0]))
+                            self.client.prepareAndSendMessage(result[0][0])
 
-                        #print(str(len(dataset[0])))
-                        # print("ml")
-
-                        model = joblib.load("/home/pi/Desktop/cg3002/final/RF.pkl")
-                        result = stats.mode(model.predict(df1))
-
-                        # predicted_action = result
-
-                        #once machine learning code is done, this function will send data
-
-                        if result[0] != 'idle':
-                            print('Result = ' + result[0])
-                            self.client.prepareAndSendMessage(result[0])
-                            
-                            if result[0] == 'logout':
-                                self.client.stopConnection()
-                            
+                            if result[0][0] == 'logout':
+                                self.client.stopConnectionAndExit()
                         else:
                             print('Result = idle, not sending message')
-                        # Clears datasetList after accounting for human reaction time and server response time
-                        threading.Timer(transitionPeriod, self.clearDatasetList);
+                        self.datasetList[:] = []
                 threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
-
-        def clearDatasetList(self):
-            self.datasetList[:] = []
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -200,11 +185,12 @@ class StoreData(threading.Thread):
 
 
 class ClientComms():
-        def __init__(self, powerList):
+        def __init__(self, powerList, port):
             self.SECRET_KEY = 'panickerpanicker'
             self.HOST = sys.argv[1]
             self.PORT = int(sys.argv[2])
             self.powerList = powerList
+            self.port = port
             self.connectToServer()
 
         def connectToServer(self):
@@ -212,11 +198,14 @@ class ClientComms():
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             print('Connected to server ' + self.HOST + ', port: ' + str(self.PORT))
-        
-        def stopConnection(self):
-            print("logging out")
+
+        def stopConnectionAndExit(self):
+            print("Logging out and exiting...")
+            # Cleanup codes before exiting the program
             self.s.shutdown(socket.SHUT_RDWR)
             self.s.close()
+            self.port.write('R') # Resets the Arduino
+            os._exit(0)
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
@@ -261,7 +250,7 @@ class Raspberry():
                 if len(sys.argv) != 4:
                     print('Invalid number of arguments')
                     print('python RpiClient.py [IP address] [Port] [csv <True, False>]')
-                    sys.exit(1)
+                    sys.exit()
 
                 try:
                     # Initalize UART Port
@@ -278,7 +267,7 @@ class Raspberry():
                     print ('Connected')
 
                     # Client to Server Connection
-                    self.client = ClientComms(self.powerList)
+                    self.client = ClientComms(self.powerList, self.port)
 
                     receiveDataThread = ReceiveData(self.buffer, self.port, receiveDataPeriod, packetSize)
                     self.threads.append(receiveDataThread)
@@ -300,7 +289,7 @@ class Raspberry():
                 except KeyboardInterrupt:
                     self.port.write('R') # Resets the Arduino
                     print('Exiting...')
-                    sys.exit(1)
+                    sys.exit()
 
 if __name__ == '__main__':
         pi = Raspberry()
