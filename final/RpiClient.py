@@ -2,6 +2,7 @@ import serial
 import time
 import socket
 import sys
+import os
 import threading
 import time
 import CircularBuffer
@@ -200,10 +201,11 @@ class ClientComms():
 
         def stopConnectionAndExit(self):
             print("Logging out and exiting...")
-            # self.s.shutdown(socket.SHUT_RDWR)
-            # self.s.close()
+            # Cleanup codes before exiting the program
+            self.s.shutdown(socket.SHUT_RDWR)
+            self.s.close()
             self.port.write('R') # Resets the Arduino
-            sys.exit(1)
+            os._exit()
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
