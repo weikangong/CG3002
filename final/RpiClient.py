@@ -51,7 +51,7 @@ class MachineLearning(threading.Thread):
                         dataset = pd.DataFrame(self.datasetList)
                         mutex.release()
                         dataset = dataset.reset_index()
-                        dataset = dataset.iloc[40:-10, 1:14]
+                        dataset = dataset.iloc[30:, 1:14]
 
                         dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
                         dataset = dataset.astype('float32')
