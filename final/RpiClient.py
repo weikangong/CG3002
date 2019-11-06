@@ -41,7 +41,7 @@ class MachineLearning(threading.Thread):
                 self.N = N
 
         def run(self):
-                self.runMachineLearning()
+                threading.Timer(self.period, self.runMachineLearning).start()
 
         def runMachineLearning(self):
                 nextTime = time.time() + self.period
@@ -87,7 +87,7 @@ class MachineLearning(threading.Thread):
                             self.client.prepareAndSendMessage(result[0][0])
 
                             if result[0][0] == 'logout':
-                                self.client.stopConnection()
+                                self.client.stopConnectionAndExit()
                         else:
                             print('Result = idle, not sending message')
                         self.datasetList[:] = []
@@ -184,11 +184,12 @@ class StoreData(threading.Thread):
 
 
 class ClientComms():
-        def __init__(self, powerList):
+        def __init__(self, powerList, port):
             self.SECRET_KEY = 'panickerpanicker'
             self.HOST = sys.argv[1]
             self.PORT = int(sys.argv[2])
             self.powerList = powerList
+            self.port = port
             self.connectToServer()
 
         def connectToServer(self):
@@ -197,10 +198,12 @@ class ClientComms():
             self.s.connect((self.HOST, self.PORT))
             print('Connected to server ' + self.HOST + ', port: ' + str(self.PORT))
 
-        def stopConnection(self):
-            print("logging out")
+        def stopConnectionAndExit(self):
+            print("Logging out and exiting...")
             self.s.shutdown(socket.SHUT_RDWR)
             self.s.close()
+            self.port.write('R') # Resets the Arduino
+            sys.exit(1)
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
@@ -262,7 +265,7 @@ class Raspberry():
                     print ('Connected')
 
                     # Client to Server Connection
-                    self.client = ClientComms(self.powerList)
+                    self.client = ClientComms(self.powerList, self.port)
 
                     receiveDataThread = ReceiveData(self.buffer, self.port, receiveDataPeriod, packetSize)
                     self.threads.append(receiveDataThread)
