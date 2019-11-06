@@ -200,8 +200,8 @@ class ClientComms():
 
         def stopConnectionAndExit(self):
             print("Logging out and exiting...")
-            self.s.shutdown(socket.SHUT_RDWR)
-            self.s.close()
+            # self.s.shutdown(socket.SHUT_RDWR)
+            # self.s.close()
             self.port.write('R') # Resets the Arduino
             sys.exit(1)
 
@@ -248,7 +248,7 @@ class Raspberry():
                 if len(sys.argv) != 4:
                     print('Invalid number of arguments')
                     print('python RpiClient.py [IP address] [Port] [csv <True, False>]')
-                    sys.exit(1)
+                    sys.exit()
 
                 try:
                     # Initalize UART Port
@@ -287,7 +287,7 @@ class Raspberry():
                 except KeyboardInterrupt:
                     self.port.write('R') # Resets the Arduino
                     print('Exiting...')
-                    sys.exit(1)
+                    sys.exit()
 
 if __name__ == '__main__':
         pi = Raspberry()
