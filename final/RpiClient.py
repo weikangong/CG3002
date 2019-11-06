@@ -28,8 +28,8 @@ from RF import train_RF
 mutex = threading.Lock()
 packetSize = 150
 sampleSize = 30
-receiveDataPeriod = 0.03
-storeDataPeriod = 0.06
+receiveDataPeriod = 0.003
+storeDataPeriod = 0.03
 machineLearningPeriod = 6
 
 class MachineLearning(threading.Thread):
