@@ -17,7 +17,7 @@ import base64
 import numpy as np
 import pandas as pd
 import math
-import joblib
+from sklearn.externals import joblib
 from scipy import stats
 from sklearn import preprocessing
 
@@ -30,8 +30,7 @@ packetSize = 150
 sampleSize = 30
 receiveDataPeriod = 0.03
 storeDataPeriod = 0.06
-machineLearningPeriod = 5
-transitionPeriod = 0.5
+machineLearningPeriod = 6
 
 class MachineLearning(threading.Thread):
         def __init__(self, client, datasetList, period, N):
@@ -40,7 +39,6 @@ class MachineLearning(threading.Thread):
                 self.datasetList = datasetList
                 self.period = period
                 self.N = N
-                self.rf = train_RF()
 
         def run(self):
                 self.runMachineLearning()
@@ -48,14 +46,13 @@ class MachineLearning(threading.Thread):
         def runMachineLearning(self):
                 nextTime = time.time() + self.period
                 print('datasetList size: ' + str(len(self.datasetList)))
-                if len(self.datasetList) >= 140:
+                if len(self.datasetList) >= 150:
                         mutex.acquire()
                         dataset = pd.DataFrame(self.datasetList)
                         mutex.release()
                         dataset = dataset.reset_index()
                         dataset = dataset.iloc[40:-10, 1:14]
 
-                        #print(dataset.head())
                         dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
                         dataset = dataset.astype('float32')
                         dataset = dataset.drop(columns=['index'])
@@ -80,30 +77,20 @@ class MachineLearning(threading.Thread):
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
                         df = preprocessing.normalize(df1)
-
-                        # result = test_RF(self.rf, df) //training on the pi
-
-                        #print(str(len(dataset[0])))
-                        # print("ml")
-
-                        model = joblib.load("/home/pi/Desktop/cg3002/final/RF.pkl")
-                        result = stats.mode(model.predict(df1))
-
-                        # predicted_action = result
-
-                        #once machine learning code is done, this function will send data
+                        model = joblib.load("/home/pi/Desktop/cg3002/software/RF3.pkl")
+                        result_arr = model.predict(df)
+                        result = stats.mode(model.predict(df))
 
                         if result[0] != 'idle':
-                            print('Result = ' + result[0])
-                            self.client.prepareAndSendMessage(result[0])
+                            print('Result = ' + str(result_arr))
+                            self.client.prepareAndSendMessage(result[0][0])
+
+                            # if result[0] == 'logout':
+                            #     self.client.stopConnection()
                         else:
                             print('Result = idle, not sending message')
-                        # Clears datasetList after accounting for human reaction time and server response time
-                        threading.Timer(transitionPeriod, self.clearDatasetList);
+                        self.datasetList[:] = []
                 threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
-
-        def clearDatasetList(self):
-            self.datasetList[:] = []
 
 class ReceiveData(threading.Thread):
         def __init__(self, buffer, port, period, packetSize):
@@ -208,6 +195,11 @@ class ClientComms():
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.connect((self.HOST, self.PORT))
             print('Connected to server ' + self.HOST + ', port: ' + str(self.PORT))
+
+        def stopConnection(self):
+            print("logging out")
+            self.s.shutdown(socket.SHUT_RDWR)
+            self.s.close()
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
