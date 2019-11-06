@@ -77,16 +77,17 @@ class MachineLearning(threading.Thread):
                         df1 = df1.astype('float32')
                         df1 = df1.dropna()
                         df = preprocessing.normalize(df1)
-                        model = joblib.load("/home/pi/Desktop/cg3002/software/RF3.pkl")
+                        model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
                         result_arr = model.predict(df)
                         result = stats.mode(model.predict(df))
+                        print('Modes = ' + str(result_arr))
 
                         if result[0] != 'idle':
-                            print('Result = ' + str(result_arr))
+                            print('Result = ' + str(result[0][0]))
                             self.client.prepareAndSendMessage(result[0][0])
 
-                            # if result[0] == 'logout':
-                            #     self.client.stopConnection()
+                            if result[0] == 'logout':
+                                self.client.stopConnection()
                         else:
                             print('Result = idle, not sending message')
                         self.datasetList[:] = []
