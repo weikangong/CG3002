@@ -82,11 +82,11 @@ class MachineLearning(threading.Thread):
                         result = stats.mode(model.predict(df))
                         print('Modes = ' + str(result_arr))
 
-                        if result[0] != 'idle':
+                        if result[0][0] != 'idle':
                             print('Result = ' + str(result[0][0]))
                             self.client.prepareAndSendMessage(result[0][0])
 
-                            if result[0] == 'logout':
+                            if result[0][0] == 'logout':
                                 self.client.stopConnection()
                         else:
                             print('Result = idle, not sending message')
