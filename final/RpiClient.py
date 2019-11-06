@@ -205,7 +205,7 @@ class ClientComms():
             self.s.shutdown(socket.SHUT_RDWR)
             self.s.close()
             self.port.write('R') # Resets the Arduino
-            os._exit()
+            os._exit(0)
 
         def prepareAndSendMessage(self, action):
             iv = Random.new().read(AES.block_size)
