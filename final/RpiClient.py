@@ -42,6 +42,7 @@ class MachineLearning(threading.Thread):
 
     def runMachineLearning(self):
         nextTime = time.time() + self.period
+        currTime = time.time()
         print('datasetList size: ' + str(len(self.datasetList)))
         if len(self.datasetList) >= 150:
             mutex.acquire()
@@ -78,7 +79,7 @@ class MachineLearning(threading.Thread):
             result_arr = model.predict(df)
             result = stats.mode(model.predict(df))
 
-            timeTaken = time.time() - nextTime - self.period
+            timeTaken = time.time() - currTime
             print('Time taken to predict: ' + str(timeTaken))
             print('Modes = ' + str(result_arr))
 
