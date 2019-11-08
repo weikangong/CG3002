@@ -69,6 +69,7 @@ class MachineLearning(threading.Thread):
 
             df1 = df_mean1.join(df_max1)
             df1 = df1.join(df_var1)
+            df1 = df1.dropna()
             df = preprocessing.normalize(df1)
 
             result_arr = self.model.predict(df)
