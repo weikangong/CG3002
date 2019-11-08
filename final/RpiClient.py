@@ -36,7 +36,7 @@ class MachineLearning(threading.Thread):
         self.datasetList = datasetList
         self.period = period
         self.N = N
-        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
+        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF5.pkl")
 
     def run(self):
         threading.Timer(self.period, self.runMachineLearning).start()
