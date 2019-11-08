@@ -46,14 +46,17 @@ class MachineLearning(threading.Thread):
         print('datasetList size: ' + str(len(self.datasetList)))
         if len(self.datasetList) >= 120:
             mutex.acquire()
-            dataset = pd.DataFrame(self.datasetList)
+            r = len(self.datasetList) % sampleSize + sampleSize
+            trimmedDataset = self.datasetList[r:]
             mutex.release()
-            dataset = dataset.reset_index()
-            dataset = dataset.iloc[30:, 1:14]
 
-            dataset.columns =  ['index', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
-            dataset = dataset.astype('float32')
-            dataset = dataset.drop(columns=['index'])
+            print('Trimmed datasetList size: ' + str(r))
+            dataset = pd.DataFrame(trimmedDataset)
+            # dataset = dataset.reset_index()
+            # dataset = dataset.iloc[30:, 1:14]
+
+            dataset.columns =  ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
+            # dataset = dataset.astype('float32')
 
             df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
             df_mean1.rename(
@@ -72,8 +75,8 @@ class MachineLearning(threading.Thread):
 
             df1 = df_mean1.join(df_max1)
             df1 = df1.join(df_var1)
-            df1 = df1.astype('float32')
-            df1 = df1.dropna()
+            # df1 = df1.astype('float32')
+            # df1 = df1.dropna()
             df = preprocessing.normalize(df1)
             model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
             result_arr = model.predict(df)
@@ -148,7 +151,7 @@ class StoreData(threading.Thread):
 
                 if testsum == checksum:
                     ack = True
-                    packet = packet.split(',')
+                    packet = [float(data) for data in packet.split(',')]
 
                     self.powerList[0] = packet[13]
                     self.powerList[1] = packet[14]
@@ -157,13 +160,13 @@ class StoreData(threading.Thread):
 
                     self.nextID = (int(packet[0]) + 1) % self.buffer.getSize()
                     mutex.acquire()
-                    self.datasetList.append(packet)
+                    self.datasetList.append(packet[1:13])
                     mutex.release()
 
                     if self.printCSV:
                         with open('/home/pi/Desktop/data.csv', 'a+') as csvfile:
                             filewriter = csv.writer(csvfile, delimiter = ',', quoting = csv.QUOTE_NONE)
-                            filewriter.writerow(packet)
+                            filewriter.writerow(packet[1:13])
                 else:
                     ack = False
                     print('Checksum failed')
