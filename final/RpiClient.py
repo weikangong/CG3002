@@ -50,6 +50,7 @@ class MachineLearning(threading.Thread):
             mutex.release()
             # dataset = dataset.iloc[30:, 1:14]
 
+            dataset.columns =  ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
             df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
             df_mean1.rename(
                 columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
