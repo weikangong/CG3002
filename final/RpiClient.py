@@ -45,9 +45,9 @@ class MachineLearning(threading.Thread):
         currTime = time.time()
         print('datasetList size: ' + str(len(self.datasetList)))
         if len(self.datasetList) >= 120:
-            mutex.acquire()
+            # mutex.acquire()
             dataset = pd.DataFrame(self.datasetList)
-            mutex.release()
+            # mutex.release()
             # dataset = dataset.iloc[30:, 1:14]
 
             dataset.columns =  ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
