@@ -50,7 +50,7 @@ class MachineLearning(threading.Thread):
             trimmedDataset = self.datasetList[r:]
             mutex.release()
 
-            print('Trimmed datasetList size: ' + str(r))
+            print('Trimmed datasetList size: ' + str(len(self.datasetList)))
             dataset = pd.DataFrame(trimmedDataset)
             # dataset = dataset.reset_index()
             # dataset = dataset.iloc[30:, 1:14]
