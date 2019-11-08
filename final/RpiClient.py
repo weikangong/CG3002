@@ -16,7 +16,6 @@ from Crypto.Util.py3compat import *
 import base64
 import numpy as np
 import pandas as pd
-import math
 from sklearn.externals import joblib
 from scipy import stats
 from sklearn import preprocessing
@@ -28,6 +27,7 @@ sampleSize = 30
 receiveDataPeriod = 0.003
 storeDataPeriod = 0.03
 machineLearningPeriod = 5
+transitionPeriod = 0.5
 
 class MachineLearning(threading.Thread):
     def __init__(self, client, datasetList, period, N):
@@ -46,12 +46,8 @@ class MachineLearning(threading.Thread):
         print('datasetList size: ' + str(len(self.datasetList)))
         if len(self.datasetList) >= 120:
             mutex.acquire()
-            r = len(self.datasetList) % sampleSize + sampleSize
-            trimmedDataset = self.datasetList[r:]
+            dataset = pd.DataFrame(self.datasetList)
             mutex.release()
-
-            print('Trimmed datasetList size: ' + str(len(self.datasetList)))
-            dataset = pd.DataFrame(trimmedDataset)
             # dataset = dataset.reset_index()
             # dataset = dataset.iloc[30:, 1:14]
 
@@ -95,8 +91,11 @@ class MachineLearning(threading.Thread):
                 #     self.client.stopConnectionAndExit()
             else:
                 print('Result = idle, not sending message')
-            self.datasetList[:] = []
+            threading.Timer(transitionPeriod, self.resetDatasetList).start()
         threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
+
+    def resetDatasetList(self):
+        self.datasetList[:] = []
 
 class ReceiveData(threading.Thread):
     def __init__(self, buffer, port, period, packetSize):
