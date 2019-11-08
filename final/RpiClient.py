@@ -52,19 +52,19 @@ class MachineLearning(threading.Thread):
 
             dataset.columns =  ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
             df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
-            # df_mean1.rename(
-            #     columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
-            #              'z2': 'z2_mean', 'x3': 'x3_mean', 'y3': 'y3_mean', 'z3': 'z3_mean', 'x4': 'x4_mean', 'y4': 'y4_mean', 'z4': 'z4_mean'}, inplace=True)
+            df_mean1.rename(
+                columns={'x1': 'x1_mean', 'y1': 'y1_mean', 'z1': 'z1_mean', 'x2': 'x2_mean', 'y2': 'y2_mean',
+                         'z2': 'z2_mean', 'x3': 'x3_mean', 'y3': 'y3_mean', 'z3': 'z3_mean', 'x4': 'x4_mean', 'y4': 'y4_mean', 'z4': 'z4_mean'}, inplace=True)
 
             df_max1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).max()
-            # df_max1.rename(columns={'x1': 'x1_max', 'y1': 'y1_max', 'z1': 'z1_max', 'x2': 'x2_max', 'y2': 'y2_max',
-            #                         'z2': 'z2_max',
-            #                         'x3': 'x3_max', 'y3': 'y3_max', 'z3': 'z3_max', 'x4': 'x4_max', 'y4': 'y4_max', 'z4': 'z4_max'}, inplace=True)
+            df_max1.rename(columns={'x1': 'x1_max', 'y1': 'y1_max', 'z1': 'z1_max', 'x2': 'x2_max', 'y2': 'y2_max',
+                                    'z2': 'z2_max',
+                                    'x3': 'x3_max', 'y3': 'y3_max', 'z3': 'z3_max', 'x4': 'x4_max', 'y4': 'y4_max', 'z4': 'z4_max'}, inplace=True)
 
             df_var1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).var()
-            # df_var1.rename(columns={'x1': 'x1_var', 'y1': 'y1_var', 'z1': 'z1_var', 'x2': 'x2_var', 'y2': 'y2_var',
-            #                         'z2': 'z2_var',
-            #                         'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var', 'x4': 'x4_var', 'y4': 'y4_var', 'z4': 'z4_var'}, inplace=True)
+            df_var1.rename(columns={'x1': 'x1_var', 'y1': 'y1_var', 'z1': 'z1_var', 'x2': 'x2_var', 'y2': 'y2_var',
+                                    'z2': 'z2_var',
+                                    'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var', 'x4': 'x4_var', 'y4': 'y4_var', 'z4': 'z4_var'}, inplace=True)
 
             df1 = df_mean1.join(df_max1)
             df1 = df1.join(df_var1)
