@@ -45,15 +45,11 @@ class MachineLearning(threading.Thread):
         nextTime = time.time() + self.period
         currTime = time.time()
         print('datasetList size: ' + str(len(self.datasetList)))
+
         if len(self.datasetList) >= 120:
             mutex.acquire()
             dataset = pd.DataFrame(self.datasetList)
             mutex.release()
-            # dataset = dataset.iloc[30:, 1:14]
-
-            timeTaken = time.time() - currTime
-            print('Time taken to predict 1: ' + str(timeTaken))
-            currTime = time.time()
 
             dataset.columns =  ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
             df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
@@ -75,15 +71,11 @@ class MachineLearning(threading.Thread):
             df1 = df1.join(df_var1)
             df = preprocessing.normalize(df1)
 
-            timeTaken = time.time() - currTime
-            print('Time taken to predict 2: ' + str(timeTaken))
-            currTime = time.time()
-
             result_arr = self.model.predict(df)
             result = stats.mode(self.model.predict(df))
 
             timeTaken = time.time() - currTime
-            print('Time taken to predict 3: ' + str(timeTaken))
+            print('Time taken to predict: ' + str(timeTaken))
             print('Modes = ' + str(result_arr))
 
             if result[0][0] != 'idle':
