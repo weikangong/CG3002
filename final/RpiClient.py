@@ -44,7 +44,7 @@ class MachineLearning(threading.Thread):
         nextTime = time.time() + self.period
         currTime = time.time()
         print('datasetList size: ' + str(len(self.datasetList)))
-        if len(self.datasetList) >= 150:
+        if len(self.datasetList) >= 120:
             mutex.acquire()
             dataset = pd.DataFrame(self.datasetList)
             mutex.release()
