@@ -80,7 +80,7 @@ class MachineLearning(threading.Thread):
             currTime = time.time()
 
             result_arr = self.model.predict(df)
-            result = stats.mode(model.predict(df))
+            result = stats.mode(self.model.predict(df))
 
             timeTaken = time.time() - currTime
             print('Time taken to predict 3: ' + str(timeTaken))
