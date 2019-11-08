@@ -85,7 +85,8 @@ class MachineLearning(threading.Thread):
 
             if result[0][0] != 'idle':
                 print('Result = ' + str(result[0][0]))
-                self.client.prepareAndSendMessage(result[0][0])
+                if result[0][0] != 'logout':
+                    self.client.prepareAndSendMessage(result[0][0])
 
                 # if result[0][0] == 'logout':
                 #     self.client.stopConnectionAndExit()
