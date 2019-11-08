@@ -45,10 +45,14 @@ class MachineLearning(threading.Thread):
         currTime = time.time()
         print('datasetList size: ' + str(len(self.datasetList)))
         if len(self.datasetList) >= 120:
-            # mutex.acquire()
+            mutex.acquire()
             dataset = pd.DataFrame(self.datasetList)
-            # mutex.release()
+            mutex.release()
             # dataset = dataset.iloc[30:, 1:14]
+
+            timeTaken = time.time() - currTime
+            print('Time taken to predict 1: ' + str(timeTaken))
+            currTime = time.time()
 
             dataset.columns =  ['x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3','x4', 'y4', 'z4']
             df_mean1 = dataset.groupby([np.arange(len(dataset.index)) // self.N], axis=0).mean()
@@ -66,6 +70,11 @@ class MachineLearning(threading.Thread):
                                     'z2': 'z2_var',
                                     'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var', 'x4': 'x4_var', 'y4': 'y4_var', 'z4': 'z4_var'}, inplace=True)
 
+
+            timeTaken = time.time() - currTime
+            print('Time taken to predict 2: ' + str(timeTaken))
+            currTime = time.time()
+
             df1 = df_mean1.join(df_max1)
             df1 = df1.join(df_var1)
             df = preprocessing.normalize(df1)
@@ -74,7 +83,7 @@ class MachineLearning(threading.Thread):
             result = stats.mode(model.predict(df))
 
             timeTaken = time.time() - currTime
-            print('Time taken to predict: ' + str(timeTaken))
+            print('Time taken to predict 3: ' + str(timeTaken))
             print('Modes = ' + str(result_arr))
 
             if result[0][0] != 'idle':
