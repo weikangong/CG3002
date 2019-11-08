@@ -36,7 +36,7 @@ class MachineLearning(threading.Thread):
         self.datasetList = datasetList
         self.period = period
         self.N = N
-        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
+        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF5.pkl")
 
     def run(self):
         threading.Timer(self.period, self.runMachineLearning).start()
@@ -69,6 +69,7 @@ class MachineLearning(threading.Thread):
 
             df1 = df_mean1.join(df_max1)
             df1 = df1.join(df_var1)
+            df1 = df1.dropna()
             df = preprocessing.normalize(df1)
 
             result_arr = self.model.predict(df)
