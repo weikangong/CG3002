@@ -6,7 +6,6 @@ import os
 import threading
 import time
 import CircularBuffer
-import random
 import operator
 import csv
 
@@ -21,9 +20,6 @@ import math
 from sklearn.externals import joblib
 from scipy import stats
 from sklearn import preprocessing
-
-from RF import test_RF
-from RF import train_RF
 
 # Constant variables
 mutex = threading.Lock()
@@ -145,7 +141,7 @@ class StoreData(threading.Thread):
             for packet in bufferList:
                 checksum = int(packet.rsplit(',', 1)[1])
                 packet = packet.rsplit(',', 1)[0]
-                testsum = reduce(operator.xor, [ord(c) for c in packet])
+                testsum = reduce(operator.xor, [ord(c) for c in packet]) # xor inclusive of delimiter ,
                 ack = False
 
                 if testsum == checksum:
@@ -183,9 +179,7 @@ class StoreData(threading.Thread):
                 mutex.acquire()
                 self.buffer.nack(self.nextID)
                 mutex.release()
-
         threading.Timer(nextTime - time.time(), self.storeData).start()
-
 
 class ClientComms():
     def __init__(self, powerList, port):
