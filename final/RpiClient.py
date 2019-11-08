@@ -36,6 +36,7 @@ class MachineLearning(threading.Thread):
         self.datasetList = datasetList
         self.period = period
         self.N = N
+        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
 
     def run(self):
         threading.Timer(self.period, self.runMachineLearning).start()
@@ -70,16 +71,15 @@ class MachineLearning(threading.Thread):
                                     'z2': 'z2_var',
                                     'x3': 'x3_var', 'y3': 'y3_var', 'z3': 'z3_var', 'x4': 'x4_var', 'y4': 'y4_var', 'z4': 'z4_var'}, inplace=True)
 
+            df1 = df_mean1.join(df_max1)
+            df1 = df1.join(df_var1)
+            df = preprocessing.normalize(df1)
 
             timeTaken = time.time() - currTime
             print('Time taken to predict 2: ' + str(timeTaken))
             currTime = time.time()
 
-            df1 = df_mean1.join(df_max1)
-            df1 = df1.join(df_var1)
-            df = preprocessing.normalize(df1)
-            model = joblib.load("/home/pi/Desktop/cg3002/software/RF4.pkl")
-            result_arr = model.predict(df)
+            result_arr = self.model.predict(df)
             result = stats.mode(model.predict(df))
 
             timeTaken = time.time() - currTime
