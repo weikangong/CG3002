@@ -18,7 +18,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 # filePath = "./training-data-complete-23+25oct-trimmed.csv"
-filePath = "./training-data-complete-14nov-trimmed.csv"
+filePath = "./training-data-complete-14nov-trimmed2.csv"
 dataset = pd.read_csv(filePath)
 # dataset = dataset.dropna()
 
@@ -81,7 +81,7 @@ print(classification_report(y_test, y_pred))
 
 
 from sklearn.externals import joblib
-joblib.dump(rf, "RF6.pkl", protocol=2)
+joblib.dump(rf, "RF7.pkl", protocol=2)
 
 
 # In[ ]:
