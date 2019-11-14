@@ -26,7 +26,7 @@ packetSize = 150
 sampleSize = 30
 receiveDataPeriod = 0.003
 storeDataPeriod = 0.03
-machineLearningPeriod = 4
+machineLearningPeriod = 3.5
 transitionPeriod = 0.7
 
 class MachineLearning(threading.Thread):
@@ -36,8 +36,8 @@ class MachineLearning(threading.Thread):
         self.datasetList = datasetList
         self.period = period
         self.N = N
-        # self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF6.pkl")
-        self.model = joblib.load("/home/pi/Desktop/cg3002/software/NN2.pkl")
+        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF6.pkl")
+        # self.model = joblib.load("/home/pi/Desktop/cg3002/software/NN2.pkl")
 
     def run(self):
         threading.Timer(self.period, self.runMachineLearning).start()
