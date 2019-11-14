@@ -26,8 +26,8 @@ packetSize = 150
 sampleSize = 30
 receiveDataPeriod = 0.003
 storeDataPeriod = 0.03
-machineLearningPeriod = 3
-transitionPeriod = 0.5
+machineLearningPeriod = 4
+transitionPeriod = 0.7
 
 class MachineLearning(threading.Thread):
     def __init__(self, client, datasetList, period, N):
