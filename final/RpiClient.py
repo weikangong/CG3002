@@ -39,7 +39,7 @@ class MachineLearning(threading.Thread):
         self.machineLearningPeriod = TAMachineLearningPeriod if sys.argv[4].lower() == 'true' else stuMachineLearningPeriod
         self.transitionPeriod = TATransitionPeriod if sys.argv[4].lower() == 'true' else stuTransitionPeriod
         self.N = N
-        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF7.pkl")
+        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF6.pkl")
         print('Machine Learning Period: ' + str(self.machineLearningPeriod) + ' Transition Period: ' + str(self.transitionPeriod))
         # self.model = joblib.load("/home/pi/Desktop/cg3002/software/NN2.pkl")
 
