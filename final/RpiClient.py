@@ -44,7 +44,7 @@ class MachineLearning(threading.Thread):
         # self.model = joblib.load("/home/pi/Desktop/cg3002/software/NN2.pkl")
 
     def run(self):
-        threading.Timer(self.period, self.runMachineLearning).start()
+        threading.Timer(self.machineLearningPeriod, self.runMachineLearning).start()
 
     def runMachineLearning(self):
         nextTime = time.time() + self.machineLearningPeriod
