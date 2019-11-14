@@ -77,7 +77,7 @@ print(classification_report(y_test, y_pred))
 
 
 from sklearn.externals import joblib
-joblib.dump(rf, "NN.pkl", protocol=2)
+joblib.dump(classifier, "NN.pkl", protocol=2)
 
 
 # In[ ]:
