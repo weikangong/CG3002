@@ -26,23 +26,28 @@ packetSize = 150
 sampleSize = 30
 receiveDataPeriod = 0.003
 storeDataPeriod = 0.03
-machineLearningPeriod = 3
-transitionPeriod = 0.5
+stuMachineLearningPeriod = 3.5
+TAMachineLearningPeriod = 5
+stuTransitionPeriod = 0.7
+TATransitionPeriod = 1.2
 
 class MachineLearning(threading.Thread):
-    def __init__(self, client, datasetList, period, N):
+    def __init__(self, client, datasetList, N):
         threading.Thread.__init__(self)
         self.client = client
         self.datasetList = datasetList
-        self.period = period
+        self.machineLearningPeriod = TAMachineLearningPeriod if sys.argv[4].lower() == 'true' else stuMachineLearningPeriod
+        self.transitionPeriod = TATransitionPeriod if sys.argv[4].lower() == 'true' else stuTransitionPeriod
         self.N = N
-        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF5.pkl")
+        self.model = joblib.load("/home/pi/Desktop/cg3002/software/RF6.pkl")
+        print('Machine Learning Period: ' + str(self.machineLearningPeriod) + ' Transition Period: ' + str(self.transitionPeriod))
+        # self.model = joblib.load("/home/pi/Desktop/cg3002/software/NN2.pkl")
 
     def run(self):
-        threading.Timer(self.period, self.runMachineLearning).start()
+        threading.Timer(self.machineLearningPeriod, self.runMachineLearning).start()
 
     def runMachineLearning(self):
-        nextTime = time.time() + self.period
+        nextTime = time.time() + self.machineLearningPeriod
         currTime = time.time()
         print('datasetList size: ' + str(len(self.datasetList)))
 
@@ -87,7 +92,7 @@ class MachineLearning(threading.Thread):
                     self.client.stopConnectionAndExit()
             else:
                 print('Result = idle, not sending message')
-            threading.Timer(transitionPeriod, self.resetDatasetList).start()
+            threading.Timer(self.transitionPeriod, self.resetDatasetList).start()
         threading.Timer(nextTime - time.time(), self.runMachineLearning).start()
 
     def resetDatasetList(self):
@@ -243,9 +248,9 @@ class Raspberry():
         self.powerList = [0, 0, 0, 0]
 
     def main(self):
-        if len(sys.argv) != 4:
+        if len(sys.argv) != 5:
             print('Invalid number of arguments')
-            print('python RpiClient.py [IP address] [Port] [csv <True, False>]')
+            print('python RpiClient.py [IP address] [Port] [csv <True, False>] [ta <True, False>]')
             sys.exit()
 
         try:
@@ -271,7 +276,8 @@ class Raspberry():
             storeDataThread = StoreData(self.buffer, self.port, self.client, self.datasetList, self.powerList, storeDataPeriod)
             self.threads.append(storeDataThread)
 
-            MachineLearningThread = MachineLearning(self.client, self.datasetList, machineLearningPeriod, sampleSize)
+            # machineLearningPeriod and transitionPeriod decided in MachineLearning by TA parameter
+            MachineLearningThread = MachineLearning(self.client, self.datasetList, sampleSize)
             self.threads.append(MachineLearningThread)
 
             # Start threads

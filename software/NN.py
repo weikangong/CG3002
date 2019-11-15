@@ -17,7 +17,7 @@ from sklearn.neural_network import MLPClassifier
 # In[2]:
 
 
-filePath = "training-data-complete-8nov-trimmed.csv"
+filePath = "training-data-complete-14nov-trimmed2.csv"
 dataset = pd.read_csv(filePath)
 # dataset = dataset.dropna()
 
@@ -77,7 +77,7 @@ print(classification_report(y_test, y_pred))
 
 
 from sklearn.externals import joblib
-joblib.dump(rf, "NN.pkl", protocol=2)
+joblib.dump(classifier, "NN3.pkl", protocol=2)
 
 
 # In[ ]:
