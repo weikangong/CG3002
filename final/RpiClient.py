@@ -27,9 +27,9 @@ sampleSize = 30
 receiveDataPeriod = 0.003
 storeDataPeriod = 0.03
 stuMachineLearningPeriod = 3.5
-TAMachineLearningPeriod = 4.5
+TAMachineLearningPeriod = 5
 stuTransitionPeriod = 0.7
-TATransitionPeriod = 1
+TATransitionPeriod = 1.2
 
 class MachineLearning(threading.Thread):
     def __init__(self, client, datasetList, N):
