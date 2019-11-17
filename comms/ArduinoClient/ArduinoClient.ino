@@ -6,14 +6,12 @@
 #include <stdlib.h>
 #include <avr/power.h>
 
-// Sensor Function Headers //
-void setupSensors();
-void processData(int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t,int16_t);
-
 // Packet definitons
+// Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, cumpower, checksum
+// Packet max length: 2 (ID) + 8 (char per data point) * 16 (data point) + 3 (checksum) + 17 (delimiter) >= 150
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
 const int MAX_POWER_POINTS = 4;         // 4 different power parameters
-const int MAX_PACKET_SIZE = 120; // Packet ID
+const int MAX_PACKET_SIZE = 150;
 const int MAX_PACKET = 30;
 
 int ackID = 0;
@@ -23,12 +21,12 @@ char packetBuffer[MAX_PACKET_SIZE * MAX_PACKET];
 char tempStr[MAX_PACKET_SIZE];
 
 // Sensors and Power definitions
-const int CURR_PIN = A15;
+const int CURR_PIN = A0;
 const int VOLT_PIN = A1;
 const float RS = 0.1;                   // Shunt resistor value (in ohms)
 const int RL = 10000;                   // RL of the INA169 (in ohms)
-const int R1 = 425;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
-const int R2 = 385;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
+const int R1 = 22;                     // R1 of voltage divider circuit, between power source and VOLT_PIN, in kohms
+const int R2 = 22;                     // R2 of voltage divider circuit, between VOLT_PIN and ground, in kohms
 
 float voltage_divide = ((float) R1 + R2) / (float) R2;  // Measured voltage is R2/(R1+R2) times actual V
 float current = 0.0;                    // Calculated current value
@@ -38,7 +36,7 @@ float cumpower = 0.0;                   // Calculated energy (E = Pt)
 unsigned long timeLastTaken = 0;        // The last time readings were calculated (in number of ms elapsed since startup)
 unsigned long tempTime = 0;             // To use as "current time" in two lines
 
-//Initialize Sensor Variables
+// Sensor definitions
 MPU6050 accelgyro; // class default I2C address is 0x68
 MPU6050 accelgyro2(0x69);
 int16_t accX1, accY1, accZ1;
@@ -46,16 +44,14 @@ int16_t gyX1, gyY1, gyZ1;
 int16_t accX2, accY2, accZ2;
 int16_t gyX2, gyY2, gyZ2;
 
-/* Variables for processed data */
-float gForceX1, gForceY1, gForceZ1; //Accelerometer processed variables
-float rotX1, rotY1, rotZ1;          //Gyroscope processed variables
+float gForceX1, gForceY1, gForceZ1; // Accelerometer processed variables
+float rotX1, rotY1, rotZ1;          // Gyroscope processed variables
 
-float gForceX2, gForceY2, gForceZ2; //Accelerometer processed variables
-float rotX2, rotY2, rotZ2;          //Gyroscope processed variables
+float gForceX2, gForceY2, gForceZ2; // Accelerometer processed variables
+float rotX2, rotY2, rotZ2;          // Gyroscope processed variables
 
-
-float sensorData[MAX_DATA_POINTS];      // Acc1, Acc2, Acc3, gyro1
-float powerData[MAX_POWER_POINTS];      // Voltage, current, power, cumpower
+float sensorData[MAX_DATA_POINTS]; // Acc1, Acc2, Acc3, gyro1
+float powerData[MAX_POWER_POINTS]; // Voltage, current, power, cumpower
 
 /////////////////////////////////
 /////      HARDWARE        //////
@@ -73,7 +69,7 @@ void setup() {
     digitalWrite(i, LOW);
   }
 
-  // Force unused analog pins to 0V to converse power
+  // Force unused analog pins to 0V to conserve power
   pinMode(A2, OUTPUT);
   pinMode(A3, OUTPUT);
   pinMode(A4, OUTPUT);
@@ -104,7 +100,7 @@ void setup() {
   digitalWrite(A15, LOW);
 
   // Disable unused devices
-  // power_adc_disable(); // probably required, we'll see
+  // power_adc_disable();
   power_spi_disable();
   //power_usart0_disable();
   power_usart2_disable();
@@ -114,32 +110,29 @@ void setup() {
   power_timer4_disable();
   power_timer5_disable();
 
-
   Serial.begin(115200);
-  Serial1.begin(115200); //Serial1: P19 RX, P18 TX
+  Serial1.begin(115200); // Serial1: P19 RX, P18 TX
   Serial.println("Arduino Online!");
   Wire.begin();
+  
   setupSensors();
-
-  // Begin Handshake Protocol
   handshake();
 
-  // Create main task to be run
   xTaskCreate(startWork, "working", 200, NULL, 1, NULL);
-
-  // Start Scheduler
   vTaskStartScheduler();
 }
 
-
-//Initialize sensors
 void setupSensors() {
     accelgyro.initialize();
     accelgyro2.initialize();
 }
 
-void processData(int16_t ax,int16_t ay,int16_t az,int16_t gx,int16_t gy,int16_t gz,int16_t a1x,int16_t a1y,int16_t a1z,int16_t g1x,int16_t g1y,int16_t g1z) {
-    
+// Get raw data, transform accelerometer readings to g, gyrometer readings to deg
+void getSensorValues() {
+    // Read sensors, integration with hardware
+    accelgyro.getMotion6(&accX1, &accY1, &accZ1, &gyX1, &gyY1, &gyZ1);
+    accelgyro2.getMotion6(&accX2, &accY2, &accZ2, &gyX2, &gyY2, &gyZ2);
+
     gForceX1 = accX1 / 16384.0 * 9.81;
     gForceY1 = accY1 / 16384.0 * 9.81; 
     gForceZ1 = accZ1 / 16384.0 * 9.81;
@@ -153,13 +146,24 @@ void processData(int16_t ax,int16_t ay,int16_t az,int16_t gx,int16_t gy,int16_t 
     rotX2 = gyX2 / 131.0;
     rotY2 = gyY2 / 131.0; 
     rotZ2 = gyZ2 / 131.0;
+
+    sensorData[0] = gForceX1;
+    sensorData[1] = gForceY1;
+    sensorData[2] = gForceZ1;
+    sensorData[3] = rotX1;
+    sensorData[4] = rotY1;
+    sensorData[5] = rotZ1;
+    sensorData[6] = gForceX2;
+    sensorData[7] = gForceY2;
+    sensorData[8] = gForceZ2;
+    sensorData[9] = rotX2;
+    sensorData[10] = rotY2;
+    sensorData[11] = rotZ2;
 }
 
-
 void getPowerValues() {
-  Serial.println("Reading Power");
   voltage = ((float) analogRead(VOLT_PIN) * 5.0) * voltage_divide / 1023.0;
-  // IS = (Vout * 1kohm) / (RL * RS)
+  
   float vout = (float) analogRead(CURR_PIN) * 5.0 / 1023.0;
   current = (vout * 1000) / (RL * RS);
   power = voltage * current;
@@ -209,56 +213,22 @@ static void startWork(void * pvParameters) {
   while (1) {
     TickType_t xCurrWakeTime = xTaskGetTickCount();
 
-    //read sensors, integration with hardware
-    accelgyro.getMotion6(&accX1, &accY1, &accZ1, &gyX1, &gyY1, &gyZ1);
-    accelgyro2.getMotion6(&accX2, &accY2, &accZ2, &gyX2, &gyY2, &gyZ2);
-//    accX1 = 1;
-//    accY1 = 2;
-//    accZ1 = 3;
-//    gyX1 = 1;
-//    gyY1 = 2;
-//    gyZ1 = 3;
-//
-//    accX2 = 1;
-//    accY2 = 2;
-//    accZ2 = 3;
-//    gyX2 = 1;
-//    gyY2 = 2;
-//    gyZ2 = 3;
-
-    //process data, give accelerometer readings in g, gyrometer readings in deg
-    processData(accX1, accY1, accZ1, gyX1, gyY1, gyZ1, accX2, accY2, accZ2, gyX2, gyY2, gyZ2);
-
-    //store processed data in sensorData[0:11]
-    sensorData[0] = gForceX1;
-    sensorData[1] = gForceY1;
-    sensorData[2] = gForceZ1;
-    sensorData[3] = rotX1;
-    sensorData[4] = rotY1;
-    sensorData[5] = rotZ1;
-    sensorData[6] = gForceX2;
-    sensorData[7] = gForceY2;
-    sensorData[8] = gForceZ2;
-    sensorData[9] = rotX2;
-    sensorData[10] = rotY2;
-    sensorData[11] = rotZ2;
-    
+    getSensorValues();
     getPowerValues();
     formatMessage();
     pushMessage();
     getResponse();
 
     Serial.println();
-    // 30 ms interval, ~30 samples/s
-    vTaskDelayUntil(&xCurrWakeTime, 30/portTICK_PERIOD_MS);
+    vTaskDelayUntil(&xCurrWakeTime, 30/portTICK_PERIOD_MS); // 30 ms interval, ~30 samples/s
   }
 }
 
 void formatMessage() {
-  if (ackID == (slotID + 1) % MAX_PACKET) return; // No more empty slots
-  
-  Serial.print("Formatting Message, slotID: ");
-  Serial.println(slotID);
+  if (ackID == (slotID + 1) % MAX_PACKET) {
+    Serial.println("Buffer Full");
+    return; // No more empty slots
+  }
 
   char slotIDChar[1];
   itoa(slotID, slotIDChar, 10);
@@ -266,7 +236,7 @@ void formatMessage() {
 
   for (int i = 0; i < MAX_DATA_POINTS + MAX_POWER_POINTS; i++) {
     strcat(tempStr, ","); // Delimiter
-    char floatChar[6];
+    char floatChar[8];
     if (i < MAX_DATA_POINTS) dtostrf(sensorData[i], 0, 2, floatChar); // Converts floats to str, inputs: val, min char, char after dp, dest
     else dtostrf(powerData[i-MAX_DATA_POINTS], 0, 2, floatChar);
 
@@ -277,12 +247,11 @@ void formatMessage() {
   int len = strlen(tempStr);
   for (int i = 0; i < len; i++) checksum ^= tempStr[i];
 
-  char checksumChar[6]; // TODO: find max value to allocate
+  char checksumChar[3];
   itoa((int) checksum, checksumChar, 10);
 
   strcat(tempStr, ",");
   strcat(tempStr, checksumChar);
-  strcat(tempStr, "\n");
 
   int startIndex = slotID * MAX_PACKET_SIZE;
   for (int i = startIndex; i < startIndex + MAX_PACKET_SIZE; i++) packetBuffer[i] = tempStr[i-startIndex];
@@ -291,8 +260,7 @@ void formatMessage() {
   Serial.print("Message formatted, len: ");
   Serial.println(strlen(tempStr));
   Serial.println(tempStr);
-  strcpy(tempStr, "");
-  
+  strcpy(tempStr, ""); 
 }
 
 void pushMessage() {
@@ -306,16 +274,20 @@ void pushMessage() {
 }
 
 void getResponse() {
-  if (Serial.available() && Serial1.read() == 'A') {
+  char val = Serial1.read();
+  Serial.print("Response: ");
+  Serial.println(val);
+
+  if (Serial1.available() && val == 'A') {
+    Serial.println("Packet Ack");
     int packetID = Serial1.read();
     ackID = packetID;
-  } else if (Serial.available() && Serial1.read() == 'N') {
+  } else if (Serial1.available() && val == 'N') {
+    Serial.println("Packet Nack");
     int packetID = Serial1.read();
     ackID = packetID;
     sendID = packetID; // Resend previous frame 
   }
 }
-
-
 
 void loop() { }

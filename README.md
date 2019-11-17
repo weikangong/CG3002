@@ -55,3 +55,4 @@ Important Files:
 1. ArduinoClient.ino - Same as in Communications Folder, with the integration and optimisation of reading sensor and power data from the Hardware Folder
 2. RpiClient.py - Same as in Communication Folder, with the integration and optimisation of machine learning thread from the Software Folder
 3. CircularBuffer - Same as in Communications Folder
+

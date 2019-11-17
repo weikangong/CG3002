@@ -1,0 +1,7 @@
+log4.csv
+final/__pycache__/*.pyc
+final/*.pyc
+comms/__pycache__/*.pyc
+comms/*.pyc
+comms/*.csv
+final/*.csv
