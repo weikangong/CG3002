@@ -17,7 +17,7 @@ from sklearn.neural_network import MLPClassifier
 # In[2]:
 
 
-filePath = "training-data-complete-14nov-trimmed2.csv"
+filePath = "data/training/training-data-complete-14nov-trimmed2.csv"
 dataset = pd.read_csv(filePath)
 # dataset = dataset.dropna()
 
