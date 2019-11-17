@@ -13,13 +13,12 @@
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
 const int MAX_POWER_POINTS = 4;         // 4 different power parameters
 const int MAX_PACKET_SIZE = 150;
-const int MAX_PACKET = 30;
+const int MAX_BUFFER = 30;
 
 int ackID = 0;
 int sendID = 0;
 int slotID = 0;
-char packetBuffer[MAX_PACKET_SIZE * MAX_PACKET];
-char tempStr[MAX_PACKET_SIZE];
+char packet[MAX_PACKET_SIZE];
 
 // Sensors and Power definitions
 const int CURR_PIN = A0;
@@ -211,8 +210,6 @@ void handshake() {
   }
 }
 
-// 1. Sensors and power
-// 2. Format and send data
 static void startWork(void * pvParameters) {
   TickType_t xLastWakeTime = xTaskGetTickCount();
   const TickType_t xFrequency = 100;
@@ -227,56 +224,52 @@ static void startWork(void * pvParameters) {
     getResponse();
 
     Serial.println();
-    vTaskDelayUntil(&xCurrWakeTime, 30/portTICK_PERIOD_MS); // 30 ms interval, ~30 samples/s
+    vTaskDelayUntil(&xCurrWakeTime, 30/portTICK_PERIOD_MS); // 30 ms interval, ~33 samples/s
   }
 }
 
 void formatMessage() {
-  if (ackID == (slotID + 1) % MAX_PACKET) {
+  if (ackID == (slotID + 1) % MAX_BUFFER) {
     Serial.println("Buffer Full");
     return; // No more empty slots
   }
 
+  strcpy(packet, "");
   char slotIDChar[1];
   itoa(slotID, slotIDChar, 10);
-  strcat(tempStr, slotIDChar);  // Converts slotID int to str and cat to tempStr as the packetId
+  strcat(packet, slotIDChar);  // Converts slotID int to str and cat to packet as the packetId
 
   for (int i = 0; i < MAX_DATA_POINTS + MAX_POWER_POINTS; i++) {
-    strcat(tempStr, ","); // Delimiter
+    strcat(packet, ","); // Delimiter
     char floatChar[8];
     if (i < MAX_DATA_POINTS) dtostrf(sensorData[i], 0, 2, floatChar); // Converts floats to str, inputs: val, min char, char after dp, dest
     else dtostrf(powerData[i-MAX_DATA_POINTS], 0, 2, floatChar);
 
-    strcat(tempStr, floatChar);
+    strcat(packet, floatChar);
   }
 
   char checksum = 0;
-  int len = strlen(tempStr);
-  for (int i = 0; i < len; i++) checksum ^= tempStr[i];
+  int len = strlen(packet);
+  for (int i = 0; i < len; i++) checksum ^= packet[i];
 
   char checksumChar[3];
   itoa((int) checksum, checksumChar, 10);
 
-  strcat(tempStr, ",");
-  strcat(tempStr, checksumChar);
-  strcat(tempStr, "\n");
+  strcat(packet, ",");
+  strcat(packet, checksumChar);
+  strcat(packet, "\n");
 
-  int startIndex = slotID * MAX_PACKET_SIZE;
-  for (int i = startIndex; i < startIndex + MAX_PACKET_SIZE; i++) packetBuffer[i] = tempStr[i-startIndex];
-
-  slotID = (slotID + 1) % MAX_PACKET;
+  slotID = (slotID + 1) % MAX_BUFFER;
   Serial.print("Message formatted, len: ");
-  Serial.println(strlen(tempStr));
-  Serial.println(tempStr);
-  strcpy(tempStr, ""); 
+  Serial.println(strlen(packet));
+  Serial.println(packet);
 }
 
 void pushMessage() {
   if (sendID != slotID) {
     Serial.println("Pushing message");
-    int startIndex = sendID * MAX_PACKET_SIZE;
-    for (int i = startIndex; i < startIndex + MAX_PACKET_SIZE; i++) Serial1.write(packetBuffer[i]);
-    sendID = (sendID + 1) % MAX_PACKET;
+    for (int i = 0; i < MAX_PACKET_SIZE; i++) Serial1.write(packet[i]);
+    sendID = (sendID + 1) % MAX_BUFFER;
     Serial.println("Pushed message");
   } 
 }

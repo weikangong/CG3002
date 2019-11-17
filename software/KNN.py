@@ -13,7 +13,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 
-filePath = "training-data-complete.csv"
+filePath = "data/training/training-data-complete.csv"
 dataset = pd.read_csv(filePath)
 # dataset = dataset.dropna()
 
