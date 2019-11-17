@@ -7,7 +7,7 @@
 #include <avr/power.h>
 
 // Packet definitons
-// Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, cumpower, checksum
+// Packet format: ID, x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4, voltage, current, power, totalPower, checksum
 // Packet max length: 2 (ID) + 8 (char per sensor data) * 12 (12 sensor data) + 5 (char per power data) * 4 (4 power data)
 // + 3 (checksum) + 19 (delimiter) = 140 bytes
 const int MAX_DATA_POINTS = 12;         // 4 sensors of 3 data points each
@@ -32,7 +32,7 @@ float voltage_divide = ((float) R1 + R2) / (float) R2;  // Measured voltage is R
 float current = 0.0;                    // Calculated current value
 float voltage = 0.0;                    // Calculated voltage
 float power = 0.0;                      // Calculated power (P = IV)
-float cumpower = 0.0;                   // Calculated energy (E = Pt)
+float totalPower = 0.0;                   // Calculated energy (E = Pt)
 unsigned long timeLastTaken = 0;        // The last time readings were calculated (in number of ms elapsed since startup)
 unsigned long tempTime = 0;             // To use as "current time" in two lines
 
@@ -53,7 +53,7 @@ float gForceX2, gForceY2, gForceZ2; // Accelerometer processed variables
 float rotX2, rotY2, rotZ2;          // Gyroscope processed variables
 
 float sensorData[MAX_DATA_POINTS]; // Acc1, Acc2, Acc3, gyro1
-float powerData[MAX_POWER_POINTS]; // Voltage, current, power, cumpower
+float powerData[MAX_POWER_POINTS]; // Voltage, current, power, totalPower
 
 /////////////////////////////////
 /////      HARDWARE        //////
@@ -67,7 +67,7 @@ void setup() {
   pinMode(CURR_PIN, INPUT);
   pinMode(VOLT_PIN, INPUT);
     
-   // Force unused digital pins to 0V to conserve power
+   // Force unused DIGITAL pins to 0V for power saving
   for (int i = 0; i <= 53; i++) {
     if (i == 4 || i == 10 || i == 12 || i == 13 || i == 17 || i == 18 || i ==  19 || i == 20 || i == 21)
       continue;
@@ -75,7 +75,7 @@ void setup() {
     digitalWrite(i, LOW);
   }
 
-  // Force unused analog pins to 0V to converse power
+  // Force unused ANALOG pins to 0V for power saving
   pinMode(A2, OUTPUT);
   pinMode(A3, OUTPUT);
   pinMode(A4, OUTPUT);
@@ -105,11 +105,11 @@ void setup() {
   digitalWrite(A14, LOW);
   digitalWrite(A15, LOW);
 
-  // Disable unused devices
-  // power_adc_disable();
+  // Disable SPI, unused USART
   power_spi_disable();
-  //power_usart0_disable();
   power_usart2_disable();
+  
+  // Disable unused system timers
   power_timer1_disable();
   power_timer2_disable();
   power_timer3_disable();
@@ -169,18 +169,21 @@ void getSensorValues() {
 
 void getPowerValues() {
   voltage = ((float) analogRead(VOLT_PIN) * 5.0) * voltage_divide / 1023.0;
-  // IS = (Vout * 1kohm) / (RL * RS)
-  float vout = (float) analogRead(CURR_PIN) * 5.0 / 1023.0;
-  current = (vout * 1000) / (RL * RS);
+  
+  float Vout = (float) analogRead(CURR_PIN) * 5.0 / 1023.0;
+  
+  current = (Vout * 1000) / (RL * RS);
+  
   power = voltage * current;
+  
   tempTime = millis();
-  cumpower += (tempTime - timeLastTaken) * power / 1000.0;
+  totalPower += (tempTime - timeLastTaken) * power / 1000.0;
   timeLastTaken = tempTime;
 
   powerData[0] = voltage;
   powerData[1] = current;
   powerData[2] = power;
-  powerData[3] = cumpower;
+  powerData[3] = totalPower;
 }
 
 /////////////////////////////////
