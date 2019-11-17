@@ -17,8 +17,12 @@ Important Files:
   * Power reading
   * Power calculations
   * Arduino subsystem power saving measures
-2. def
-3. jkl
+2. Sensor.ino - Includes sensor-relevant code before integration into the main ArduinoClient.ino. The code performs the following:
+  * Initializing the sensors
+  * Getting the raw sensor values
+  * Processing the sensor values
+  * Print it on Serial Terminal
+  Note: Use this to test that the sensors are working as expected, using the Serial Monitor of Arduino
 
 ### Communications Folder
 
@@ -51,3 +55,4 @@ Important Files:
 1. ArduinoClient.ino - Same as in Communications Folder, with the integration and optimisation of reading sensor and power data from the Hardware Folder
 2. RpiClient.py - Same as in Communication Folder, with the integration and optimisation of machine learning thread from the Software Folder
 3. CircularBuffer - Same as in Communications Folder
+
