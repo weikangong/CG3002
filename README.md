@@ -13,7 +13,10 @@ Head over to our [Wiki Home][wiki] to find out on how to setup the dance predict
 ### Hardware Folder
 
 Important Files:
-1. abc
+1. Power.ino - Includes power-relevant code from the main ArduinoClient.ino file. Contains code segments detailing:
+  * Power reading
+  * Power calculations
+  * Arduino subsystem power saving measures
 2. def
 3. jkl
 
