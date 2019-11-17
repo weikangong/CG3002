@@ -1,6 +1,6 @@
 ## CG3002: Dance
 
-Head over to our [Wiki Home][wiki] to find out more!
+Head over to our [Wiki Home][wiki] to find out on how to setup the dance prediction system. Below describes the various components of the system and their integration as a dance prediction system.
 
 <p align="center">
   <img src="/images/main.jpg">
