@@ -18,7 +18,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 
 # filePath = "./training-data-complete-23+25oct-trimmed.csv"
-filePath = "./training-data-complete-14nov-trimmed2.csv"
+filePath = "./data/training/training-data-complete-14nov-trimmed2.csv"
 dataset = pd.read_csv(filePath)
 # dataset = dataset.dropna()
 
